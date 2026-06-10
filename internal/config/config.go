@@ -11,6 +11,7 @@ type Config struct {
 	GRPCPort    string `mapstructure:"GRPC_PORT"`
 	DatabaseURL string `mapstructure:"DATABASE_URL"`
 	JWTSecret   string `mapstructure:"JWT_SECRET"`
+	RabbitMQURL string `mapstructure:"RABBITMQ_URL"`
 }
 
 // LoadConfig reads configuration from file or environment variables
