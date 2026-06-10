@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/domain"
-	
-	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth" 
-	
+
+	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -46,15 +46,73 @@ func (h *AuthGRPCHandler) RegisterUser(ctx context.Context, req *authpb.Register
 }
 
 func (h *AuthGRPCHandler) VerifyCode(ctx context.Context, req *authpb.VerifyRequest) (*authpb.VerifyResponse, error) {
-	// Execute the core validation business constraints
-	success, err := h.useCase.VerifyCode(ctx, req.GetEmail(), req.GetCode())
+	// Capture all 4 return parameters from our updated use case flow 🏎️💨
+	token, expiresAt, user, err := h.useCase.VerifyCode(ctx, req.GetEmail(), req.GetCode())
 	if err != nil {
-		// Return a clean gRPC status code error to the mobile app
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &authpb.VerifyResponse{
-		Success: success,
-		Message: "Your profile has been successfully verified! Welcome to PhonkDrift. ✓",
+		Success:   true,
+		Message:   "Your profile has been successfully verified! Welcome to PhonkDrift. ✓",
+		Token:     token,
+		ExpiresAt: expiresAt,
+		UserId:    user.ID,
+	}, nil
+}
+
+func (h *AuthGRPCHandler) LoginUser(ctx context.Context, req *authpb.LoginRequest) (*authpb.LoginResponse, error) {
+	token, user, expiresAt, err := h.useCase.LoginUser(ctx, req.GetEmail(), req.GetPassword())
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	return &authpb.LoginResponse{
+		Token:     token,
+		UserId:    user.ID,
+		ExpiresAt: expiresAt,
+	}, nil
+}
+
+func (h *AuthGRPCHandler) ValidateToken(ctx context.Context, req *authpb.ValidateTokenRequest) (*authpb.ValidateTokenResponse, error) {
+	userID, username, err := h.useCase.ValidateToken(ctx, req.GetToken())
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	return &authpb.ValidateTokenResponse{
+		IsValid:  true,
+		UserId:   userID,
+		Username: username,
+	}, nil
+}
+
+func (h *AuthGRPCHandler) ResendCode(ctx context.Context, req *authpb.ResendCodeRequest) (*authpb.ResendCodeResponse, error) {
+	err := h.useCase.ResendCode(ctx, req.GetEmail())
+	if err != nil {
+		if err.Error() == "user not found" {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		if err.Error() == "account is already verified" {
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		}
+		return nil, status.Error(codes.Internal, "failed to resend code: "+err.Error())
+	}
+	return &authpb.ResendCodeResponse{
+		Success: true,
+		Message: "Verification code resent successfully. Check your email.",
+	}, nil
+}
+
+func (h *AuthGRPCHandler) GetUser(ctx context.Context, req *authpb.GetUserRequest) (*authpb.GetUserResponse, error) {
+	user, err := h.useCase.GetUser(ctx, req.GetUserId())
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+	return &authpb.GetUserResponse{
+		User: &authpb.User{
+			UserId:    user.ID,
+			Username:  user.Username,
+			Email:     user.Email,
+			AvatarUrl: user.AvatarURL,
+		},
 	}, nil
 }

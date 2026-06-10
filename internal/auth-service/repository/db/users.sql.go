@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -83,6 +84,29 @@ func (q *Queries) GetUserByEmail(ctx context.Context, dollar_1 string) (User, er
 	return i, err
 }
 
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, username, email, password_hash, avatar_url, is_verified, verification_code, code_expires_at, created_at, updated_at FROM users
+WHERE id = $1::uuid LIMIT 1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, dollar_1 uuid.UUID) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByID, dollar_1)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.AvatarUrl,
+		&i.IsVerified,
+		&i.VerificationCode,
+		&i.CodeExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getVerificationDetails = `-- name: GetVerificationDetails :one
 SELECT id, verification_code, code_expires_at, is_verified
 FROM users
@@ -139,4 +163,23 @@ func (q *Queries) UpdateUserVerification(ctx context.Context, arg UpdateUserVeri
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updateUserVerificationCode = `-- name: UpdateUserVerificationCode :exec
+UPDATE users
+SET verification_code = $1::text,
+    code_expires_at = $2::timestamptz,
+    updated_at = CURRENT_TIMESTAMP
+WHERE email = $3::text
+`
+
+type UpdateUserVerificationCodeParams struct {
+	VerificationCode string    `json:"verification_code"`
+	CodeExpiresAt    time.Time `json:"code_expires_at"`
+	Email            string    `json:"email"`
+}
+
+func (q *Queries) UpdateUserVerificationCode(ctx context.Context, arg UpdateUserVerificationCodeParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserVerificationCode, arg.VerificationCode, arg.CodeExpiresAt, arg.Email)
+	return err
 }

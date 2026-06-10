@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/domain"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -46,10 +48,7 @@ func (u *authUseCase) Register(ctx context.Context, req domain.RegisterReq) (*do
 		return nil, fmt.Errorf("failed to safely secure user secret: %w", err)
 	}
 
-	// 🚀 STEP 4: GENERATE VERIFICATION DETAILS FIRST
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	vCode := fmt.Sprintf("%06d", rng.Intn(1000000))
-	expiresAt := time.Now().Add(15 * time.Minute) // 15-Minute Expiration Window Target
+	vCode, expiresAt := generateCode()
 
 	// 🚀 STEP 5: COMMIT EVERYTHING TO DATABASE LAYER (Now passing vCode and expiresAt)
 	newUser, err := u.repo.CreateUser(ctx, username, email, string(hashedPassword), vCode, expiresAt)
@@ -66,35 +65,153 @@ func (u *authUseCase) Register(ctx context.Context, req domain.RegisterReq) (*do
 	return newUser, nil
 }
 
-// Make sure the method name, receiver (*authUseCase), and arguments match perfectly:
-func (u *authUseCase) VerifyCode(ctx context.Context, email, code string) (bool, error) {
+func (u *authUseCase) VerifyCode(ctx context.Context, email, code string) (string, int64, *domain.User, error) {
 	details, err := u.repo.GetVerificationDetails(ctx, email)
 	if err != nil || details == nil {
-		return false, errors.New("user account profile registration parameters not found")
+		return "", 0, nil, errors.New("user account profile registration parameters not found")
 	}
 
 	if details.IsVerified {
-		return true, nil
+		return "", 0, nil, errors.New("account is already verified")
 	}
 
 	if time.Now().After(details.CodeExpiresAt) {
-		return false, errors.New("verification security token transaction has expired (15 min window reached)")
+		return "", 0, nil, errors.New("verification security token transaction has expired")
 	}
 
 	if details.VerificationCode != code {
-		return false, errors.New("invalid verification security code sequence provided")
+		return "", 0, nil, errors.New("invalid verification security code sequence provided")
 	}
 
 	err = u.repo.MarkUserVerified(ctx, details.UserID)
 	if err != nil {
-		return false, errors.New("failed to upgrade user profile activation state")
+		return "", 0, nil, errors.New("failed to upgrade user profile activation state")
 	}
 
-	// DISPATCH THE WELCOME EVENT IN THE BACKGROUND:
-	userProfile, _ := u.repo.GetUserByEmail(ctx, email)
-	if userProfile != nil {
-		_ = u.publisher.PublishUserVerified(ctx, userProfile.Username, email)
+	userProfile, err := u.repo.GetUserByID(ctx, details.UserID)
+	if err != nil || userProfile == nil {
+		return "", 0, nil, errors.New("failed to retrieve verified profile info")
 	}
 
-	return true, nil
+	// Clean centralized call 🏎️💨
+	tokenString, expiresAt, err := generateAccessToken(userProfile.ID, userProfile.Username)
+	if err != nil {
+		return "", 0, nil, fmt.Errorf("failed to generate access token: %w", err)
+	}
+
+	_ = u.publisher.PublishUserVerified(ctx, userProfile.Username, email)
+
+	return tokenString, expiresAt, userProfile, nil
+}
+
+func (u *authUseCase) LoginUser(ctx context.Context, email, password string) (string, *domain.User, int64, error) {
+	user, err := u.repo.GetUserByEmail(ctx, strings.ToLower(email))
+	if err != nil || user == nil {
+		return "", nil, 0, errors.New("invalid email or password")
+	}
+	if !user.IsVerified {
+		return "", nil, 0, errors.New("please verify your email before logging in")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		return "", nil, 0, errors.New("invalid email or password")
+	}
+
+	// Clean centralized call 🏎️💨
+	tokenString, expiresAt, err := generateAccessToken(user.ID, user.Username)
+	if err != nil {
+		return "", nil, 0, fmt.Errorf("failed to generate access token: %w", err)
+	}
+
+	return tokenString, user, expiresAt, nil
+}
+func (u *authUseCase) ValidateToken(ctx context.Context, tokenString string) (string, string, error) {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		secret = "phonk-drift-default-secret-key"
+	}
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secret), nil
+	})
+
+	if err != nil || !token.Valid {
+		return "", "", errors.New("session expired or invalid token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", "", errors.New("failed to parse session identity")
+	}
+
+	userID, _ := claims["user_id"].(string)
+	username, _ := claims["username"].(string)
+
+	return userID, username, nil
+}
+
+func (u *authUseCase) ResendCode(ctx context.Context, email string) error {
+	user, err := u.repo.GetUserByEmail(ctx, strings.ToLower(email))
+	if err != nil || user == nil {
+		return errors.New("user not found")
+	}
+
+	if user.IsVerified {
+		return errors.New("account is already verified")
+	}
+
+	// Dynamic 6 digit generator syntax secure block
+	vCode, expiresAt := generateCode()
+
+	err = u.repo.UpdateUserVerificationCode(ctx, user.Email, vCode, expiresAt)
+	if err != nil {
+		return fmt.Errorf("failed to refresh security code: %w", err)
+	}
+
+	_ = u.publisher.PublishUserRegistered(ctx, user.Username, user.Email, vCode)
+	return nil
+}
+
+func (u *authUseCase) GetUser(ctx context.Context, userID string) (*domain.User, error) {
+	user, err := u.repo.GetUserByID(ctx, userID)
+	if err != nil || user == nil {
+		return nil, errors.New("user profile not found")
+	}
+	return user, nil
+}
+
+// Helpers
+func generateCode() (string, time.Time) {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	vCode := fmt.Sprintf("%06d", rng.Intn(1000000))
+	expiresAt := time.Now().Add(15 * time.Minute)
+
+	return vCode, expiresAt
+}
+
+// Reusable token generation utility helper
+func generateAccessToken(userID, username string) (string, int64, error) {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		secret = "phonk-drift-default-secret-key"
+	}
+
+	expiresAt := time.Now().Add(72 * time.Hour).Unix()
+	claims := jwt.MapClaims{
+		"user_id":  userID,
+		"username": username,
+		"exp":      expiresAt,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(secret))
+	if err != nil {
+		return "", 0, err
+	}
+
+	return tokenString, expiresAt, nil
 }

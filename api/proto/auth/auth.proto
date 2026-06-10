@@ -10,17 +10,8 @@ service AuthService {
     rpc LoginUser (LoginRequest) returns (LoginResponse);
     rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
     rpc VerifyCode (VerifyRequest) returns (VerifyResponse);
-}
-
-
-message VerifyRequest {
-    string email = 1;
-    string code = 2;
-}
-
-message VerifyResponse {
-    bool success = 1;
-    string message = 2;
+    rpc ResendCode (ResendCodeRequest) returns (ResendCodeResponse); // Added 
+    rpc GetUser (GetUserRequest) returns (GetUserResponse);           // Added 
 }
 
 message RegisterRequest {
@@ -32,6 +23,19 @@ message RegisterRequest {
 message RegisterResponse {
     string user_id = 1;
     string message = 2;
+}
+
+message VerifyRequest {
+    string email = 1;
+    string code = 2;
+}
+
+message VerifyResponse {
+    bool success = 1;
+    string message = 2;
+    string token = 3;        // Added for auto-login 
+    int64 expires_at = 4;    // Added for auto-login 
+    string user_id = 5;      // Added for auto-login 
 }
 
 message LoginRequest {
@@ -53,4 +57,30 @@ message ValidateTokenResponse {
     bool is_valid = 1;
     string user_id = 2;
     string username = 3;
+}
+
+// Added for ResendCode 
+message ResendCodeRequest {
+    string email = 1;
+}
+
+message ResendCodeResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+// Added for GetUser 
+message GetUserRequest {
+    string user_id = 1;
+}
+
+message GetUserResponse {
+    User user = 1;
+}
+
+message User {
+    string user_id = 1;
+    string username = 2;
+    string email = 3;
+    string avatar_url = 4;
 }

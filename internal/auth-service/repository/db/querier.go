@@ -6,13 +6,17 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	GetUserByEmail(ctx context.Context, dollar_1 string) (User, error)
+	GetUserByID(ctx context.Context, dollar_1 uuid.UUID) (User, error)
 	GetVerificationDetails(ctx context.Context, dollar_1 string) (GetVerificationDetailsRow, error)
 	UpdateUserVerification(ctx context.Context, arg UpdateUserVerificationParams) (User, error)
+	UpdateUserVerificationCode(ctx context.Context, arg UpdateUserVerificationCodeParams) error
 }
 
 var _ Querier = (*Queries)(nil)

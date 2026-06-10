@@ -27,8 +27,8 @@ func (r *authRepository) CreateUser(ctx context.Context, username, email, passwo
 		Username:         username,
 		Email:            email,
 		PasswordHash:     passwordHash,
-		VerificationCode: sql.NullString{String: vCode, Valid: true}, // Maps token string
-		CodeExpiresAt:    sql.NullTime{Time: expiresAt, Valid: true},   // Maps tracking window timestamp
+		VerificationCode: sql.NullString{String: vCode, Valid: true},
+		CodeExpiresAt:    sql.NullTime{Time: expiresAt, Valid: true},
 	})
 	if err != nil {
 		return nil, err
@@ -95,4 +95,37 @@ func (r *authRepository) MarkUserVerified(ctx context.Context, userID string) er
 		ID:         parsedUUID, // uuid.UUID from @id
 	})
 	return err
+}
+
+func (r *authRepository) GetUserByID(ctx context.Context, userID string) (*domain.User, error) {
+	parsedUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := r.queries.GetUserByID(ctx, parsedUUID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &domain.User{
+		ID:         user.ID.String(),
+		Username:   user.Username,
+		Email:      user.Email,
+		AvatarURL:  user.AvatarUrl.String,
+		IsVerified: user.IsVerified.Bool,
+		CreatedAt:  user.CreatedAt.Time,
+		UpdatedAt:  user.UpdatedAt.Time,
+	}, nil
+}
+
+func (r *authRepository) UpdateUserVerificationCode(ctx context.Context, email, vCode string, expiresAt time.Time) error {
+	return r.queries.UpdateUserVerificationCode(ctx, db.UpdateUserVerificationCodeParams{
+		Email:            email,
+		VerificationCode: vCode,
+		CodeExpiresAt:    expiresAt,
+	})
 }

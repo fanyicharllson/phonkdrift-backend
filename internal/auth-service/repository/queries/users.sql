@@ -10,10 +10,21 @@ RETURNING id, username, email, avatar_url, is_verified, created_at, updated_at;
 SELECT * FROM users
 WHERE email = $1::text LIMIT 1;
 
+-- name: GetUserByID :one
+SELECT * FROM users
+WHERE id = $1::uuid LIMIT 1;
+
 -- name: GetVerificationDetails :one
 SELECT id, verification_code, code_expires_at, is_verified
 FROM users
 WHERE email = $1::text LIMIT 1;
+
+-- name: UpdateUserVerificationCode :exec
+UPDATE users
+SET verification_code = @verification_code::text,
+    code_expires_at = @code_expires_at::timestamptz,
+    updated_at = CURRENT_TIMESTAMP
+WHERE email = @email::text;
 
 -- name: UpdateUserVerification :one
 UPDATE users
