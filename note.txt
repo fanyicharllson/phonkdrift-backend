@@ -1,0 +1,67 @@
+Let’s go! Seeing that database schema apply cleanly to Supabase means your infrastructure pipeline is officially working like clockwork.
+
+To answer your question: **No, you cannot edit an existing migration SQL file after it has already run.** This rule is identical to Spring Boot (Flyway/Liquibase), and it exists for the exact same reason: **Immutability**.
+
+---
+
+### Why You Can't Edit a Past Migration File
+
+When `golang-migrate` runs, it records the version number (e.g., `1`) in a special metadata table inside your database called `schema_migrations`.
+
+If you go back and change `000001_init_users_table.up.sql` (for example, adding a `phone_number` column), and then run the migration command again, `golang-migrate` will look at the database, see that version `1` has already been applied, and **completely ignore your changes.** Even worse, if you try to deploy this modified codebase to production, your production database will be out of sync with your local database, breaking the fundamental rule of version-controlled infrastructure.
+
+---
+
+### The Production Way to Change Your Schema
+
+If you need to change your database structure (like adding a field, renaming a column, or deleting a constraint), you must always **move forward by creating a brand-new migration file.**
+
+For example, if you want to add an `avatar_url` or a `bio` column to your users later on, you follow this exact workflow:
+
+#### 1. Generate a new sequence file:
+
+```powershell
+migrate create -ext sql -dir internal/auth-service/repository/migrations -seq add_bio_to_users
+
+```
+
+This generates `000002_add_bio_to_users.up.sql` and `000002_add_bio_to_users.down.sql`.
+
+#### 2. Write the modification inside the new files:
+
+Inside the `.up.sql`:
+
+```sql
+ALTER TABLE users ADD COLUMN bio TEXT DEFAULT '';
+
+```
+
+Inside the `.down.sql`:
+
+```sql
+ALTER TABLE users DROP COLUMN bio;
+
+```
+
+#### 3. Run the migration engine again:
+
+```powershell
+migrate -path internal/auth-service/repository/migrations -database $dbUrl up
+
+```
+
+`golang-migrate` will notice that version `1` is already done, look at version `2`, and apply *only* the new alteration seamlessly.
+
+---
+
+### The Only Exception (Local Development Only)
+
+If you are purely working locally, haven't pushed your code to GitHub yet, and completely messed up your initial table structure, you *can* wipe the slate clean:
+
+1. Run `migrate ... down` to completely drop the tables.
+2. Edit your original `000001` SQL file.
+3. Run `migrate ... up` to re-apply it fresh.
+
+But once your code is pushed to GitHub or shared with other services, you must **always create a new migration version to move forward.**
+
+Now that our database schema tracking is safely initialized, do you want to install `sqlc` next so we can auto-generate the type-safe Go code for querying this new `users` table?

@@ -42,3 +42,13 @@ When a mobile user interacts with the Flutter application, data moves seamlessly
 ### Phase 4: Asynchronous Cascades (Non-blocking Operations)
 7. Simultaneously, if the system flags the track execution as a milestone event, the Track Service fires a non-blocking background notification message into the **RabbitMQ Event Bus** (`track.trending`).
 8. The main streaming process is completed immediately without waiting. Meanwhile, the independent **Notification Broker Service** consumes the event off the queue asynchronously and handles mass push notifications via Firebase safely in the background.
+
+### node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# 1. Temporarily load the connection string directly from your local file
+$dbUrl = Select-String -Path "cmd/auth-service/.env" -Pattern "DATABASE_URL=" | ForEach-Object { $_.Line.Split('=')[1] }
+
+# 2. Fire the migration tool upward
+migrate -path internal/auth-service/repository/migrations -database $dbUrl up
+
+---
