@@ -12,6 +12,7 @@ type Config struct {
 	DatabaseURL string `mapstructure:"DATABASE_URL"`
 	JWTSecret   string `mapstructure:"JWT_SECRET"`
 	RabbitMQURL string `mapstructure:"RABBITMQ_URL"`
+	ResendAPIKey string `mapstructure:"RESEND_API_KEY"`
 }
 
 // LoadConfig reads configuration from file or environment variables
