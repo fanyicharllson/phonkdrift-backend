@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package track;
+
+option go_package = "github.com/fanyicharllson/phonkdrift-backend/pb/track;trackpb";
+
+// Service handling music discovery, streaming links, and trend triggers
+service TrackService {
+    // Client searches for a Phonk track
+    rpc SearchTrack (SearchRequest) returns (SearchResponse);
+    
+    // Fetches the direct, temporary streaming link (handled by Go + yt-dlp)
+    rpc GetStreamURL (StreamRequest) returns (StreamResponse);
+    
+    // Fetches top trending tracks to display on the home screen
+    rpc GetTrendingTracks (TrendingRequest) returns (TrendingResponse);
+}
+
+message TrackMetadata {
+    string track_id = 1;
+    string title = 2;
+    string artist = 3;
+    string duration = 4;
+    string thumbnail_url = 5;
+    string original_youtube_id = 6;
+}
+
+message SearchRequest {
+    string query = 1;
+    int32 page = 2;
+}
+
+message SearchResponse {
+    repeated TrackMetadata tracks = 1; // "repeated" means an Array/List in Dart/Go
+}
+
+message StreamRequest {
+    string track_id = 1;
+    string original_youtube_id = 2;
+}
+
+message StreamResponse {
+    string stream_url = 1;        // The high-speed direct stream link
+    int64 link_expires_at = 2;    // Unix timestamp when the link dies
+}
+
+message TrendingRequest {
+    int32 limit = 1;
+}
+
+message TrendingResponse {
+    repeated TrackMetadata tracks = 1;
+}
