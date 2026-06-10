@@ -14,17 +14,19 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
-    username, email, password_hash
+    username, email, password_hash, verification_code, code_expires_at
 ) VALUES (
-    $1, $2, $3
+    $1, $2, $3, $4, $5
 )
 RETURNING id, username, email, avatar_url, is_verified, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Username     string `json:"username"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"password_hash"`
+	Username         string         `json:"username"`
+	Email            string         `json:"email"`
+	PasswordHash     string         `json:"password_hash"`
+	VerificationCode sql.NullString `json:"verification_code"`
+	CodeExpiresAt    sql.NullTime   `json:"code_expires_at"`
 }
 
 type CreateUserRow struct {
@@ -38,7 +40,13 @@ type CreateUserRow struct {
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.Email, arg.PasswordHash)
+	row := q.db.QueryRowContext(ctx, createUser,
+		arg.Username,
+		arg.Email,
+		arg.PasswordHash,
+		arg.VerificationCode,
+		arg.CodeExpiresAt,
+	)
 	var i CreateUserRow
 	err := row.Scan(
 		&i.ID,
@@ -53,7 +61,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, password_hash, avatar_url, is_verified, created_at, updated_at FROM users
+SELECT id, username, email, password_hash, avatar_url, is_verified, verification_code, code_expires_at, created_at, updated_at FROM users
 WHERE email = $1::text LIMIT 1
 `
 
@@ -67,26 +75,56 @@ func (q *Queries) GetUserByEmail(ctx context.Context, dollar_1 string) (User, er
 		&i.PasswordHash,
 		&i.AvatarUrl,
 		&i.IsVerified,
+		&i.VerificationCode,
+		&i.CodeExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
+const getVerificationDetails = `-- name: GetVerificationDetails :one
+SELECT id, verification_code, code_expires_at, is_verified
+FROM users
+WHERE email = $1::text LIMIT 1
+`
+
+type GetVerificationDetailsRow struct {
+	ID               uuid.UUID      `json:"id"`
+	VerificationCode sql.NullString `json:"verification_code"`
+	CodeExpiresAt    sql.NullTime   `json:"code_expires_at"`
+	IsVerified       sql.NullBool   `json:"is_verified"`
+}
+
+func (q *Queries) GetVerificationDetails(ctx context.Context, dollar_1 string) (GetVerificationDetailsRow, error) {
+	row := q.db.QueryRowContext(ctx, getVerificationDetails, dollar_1)
+	var i GetVerificationDetailsRow
+	err := row.Scan(
+		&i.ID,
+		&i.VerificationCode,
+		&i.CodeExpiresAt,
+		&i.IsVerified,
+	)
+	return i, err
+}
+
 const updateUserVerification = `-- name: UpdateUserVerification :one
 UPDATE users
-SET is_verified = $1::boolean, updated_at = CURRENT_TIMESTAMP
+SET is_verified = $1::boolean, 
+    verification_code = NULL, 
+    code_expires_at = NULL, 
+    updated_at = CURRENT_TIMESTAMP
 WHERE id = $2::uuid
-RETURNING id, username, email, password_hash, avatar_url, is_verified, created_at, updated_at
+RETURNING id, username, email, password_hash, avatar_url, is_verified, verification_code, code_expires_at, created_at, updated_at
 `
 
 type UpdateUserVerificationParams struct {
-	Column1 bool      `json:"column_1"`
-	Column2 uuid.UUID `json:"column_2"`
+	IsVerified bool      `json:"is_verified"`
+	ID         uuid.UUID `json:"id"`
 }
 
 func (q *Queries) UpdateUserVerification(ctx context.Context, arg UpdateUserVerificationParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUserVerification, arg.Column1, arg.Column2)
+	row := q.db.QueryRowContext(ctx, updateUserVerification, arg.IsVerified, arg.ID)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -95,6 +133,8 @@ func (q *Queries) UpdateUserVerification(ctx context.Context, arg UpdateUserVeri
 		&i.PasswordHash,
 		&i.AvatarUrl,
 		&i.IsVerified,
+		&i.VerificationCode,
+		&i.CodeExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

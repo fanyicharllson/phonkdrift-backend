@@ -24,18 +24,29 @@ type RegisterReq struct {
 	Password string
 }
 
+type VerificationDetails struct {
+	UserID           string
+	VerificationCode string
+	CodeExpiresAt    time.Time
+	IsVerified       bool
+}
+
 // AuthRepository defines the database data-access expectations (Hexagonal Output Port)
 type AuthRepository interface {
-	CreateUser(ctx context.Context, username, email, passwordHash string) (*User, error)
+	CreateUser(ctx context.Context, username, email, passwordHash, vCode string, expiresAt time.Time) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	GetVerificationDetails(ctx context.Context, email string) (*VerificationDetails, error)
+	MarkUserVerified(ctx context.Context, userID string) error
 }
 
 // EventEventPublisher defines the expectations for queuing async tasks (Hexagonal Output Port)
 type EventPublisher interface {
 	PublishUserRegistered(ctx context.Context, username, email, verificationCode string) error
+	PublishUserVerified(ctx context.Context, username, email string) error
 }
 
 // AuthUseCase defines the core business orchestration entry point (Hexagonal Input Port)
 type AuthUseCase interface {
 	Register(ctx context.Context, req RegisterReq) (*User, error)
+	VerifyCode(ctx context.Context, email, code string) (bool, error)
 }

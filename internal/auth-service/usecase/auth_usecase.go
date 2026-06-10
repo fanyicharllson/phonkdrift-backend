@@ -46,22 +46,55 @@ func (u *authUseCase) Register(ctx context.Context, req domain.RegisterReq) (*do
 		return nil, fmt.Errorf("failed to safely secure user secret: %w", err)
 	}
 
-	// 4. Commit user to database layer (IsVerified defaults to false)
-	newUser, err := u.repo.CreateUser(ctx, username, email, string(hashedPassword))
+	// 🚀 STEP 4: GENERATE VERIFICATION DETAILS FIRST
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	vCode := fmt.Sprintf("%06d", rng.Intn(1000000))
+	expiresAt := time.Now().Add(15 * time.Minute) // 15-Minute Expiration Window Target
+
+	// 🚀 STEP 5: COMMIT EVERYTHING TO DATABASE LAYER (Now passing vCode and expiresAt)
+	newUser, err := u.repo.CreateUser(ctx, username, email, string(hashedPassword), vCode, expiresAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to write profile transaction: %w", err)
 	}
 
-	// 5. Generate a random 6-digit numeric verification code
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	vCode := fmt.Sprintf("%06d", rng.Intn(1000000))
-
 	// 6. Push event payload asynchronously into RabbitMQ pipeline
 	err = u.publisher.PublishUserRegistered(ctx, newUser.Username, newUser.Email, vCode)
 	if err != nil {
-		// Log warning but don't crash registration; worker can pick up or retry mechanism can be implemented
 		fmt.Printf("Asynchronous pipeline delivery warning: %v\n", err)
 	}
 
 	return newUser, nil
+}
+
+// Make sure the method name, receiver (*authUseCase), and arguments match perfectly:
+func (u *authUseCase) VerifyCode(ctx context.Context, email, code string) (bool, error) {
+	details, err := u.repo.GetVerificationDetails(ctx, email)
+	if err != nil || details == nil {
+		return false, errors.New("user account profile registration parameters not found")
+	}
+
+	if details.IsVerified {
+		return true, nil
+	}
+
+	if time.Now().After(details.CodeExpiresAt) {
+		return false, errors.New("verification security token transaction has expired (15 min window reached)")
+	}
+
+	if details.VerificationCode != code {
+		return false, errors.New("invalid verification security code sequence provided")
+	}
+
+	err = u.repo.MarkUserVerified(ctx, details.UserID)
+	if err != nil {
+		return false, errors.New("failed to upgrade user profile activation state")
+	}
+
+	// DISPATCH THE WELCOME EVENT IN THE BACKGROUND:
+	userProfile, _ := u.repo.GetUserByEmail(ctx, email)
+	if userProfile != nil {
+		_ = u.publisher.PublishUserVerified(ctx, userProfile.Username, email)
+	}
+
+	return true, nil
 }

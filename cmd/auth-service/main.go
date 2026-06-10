@@ -6,7 +6,6 @@ import (
 	"net"
 
 	grpcDelivery "github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/delivery/grpc"
-
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/repository"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/usecase"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/config"
@@ -51,10 +50,18 @@ func main() {
 	}
 	defer ch.Close()
 
-	// Ensure our communication queue exists
-	_, err = ch.QueueDeclare("auth.user_registered", true, false, false, false, nil)
+	// 🚀 CENTRAL TOPIC EXCHANGE TOPOLOGY (CLEAN & DECOUPLED)
+	err = ch.ExchangeDeclare(
+		"auth.events", // exchange name
+		"topic",       // type
+		true,          // durable
+		false,         // auto-deleted
+		false,         // internal
+		false,         // no-wait
+		nil,           // arguments
+	)
 	if err != nil {
-		log.Fatalf("Critical: Failed to declare AMQP queue structure: %v", err)
+		log.Fatalf("Critical: Failed to declare core exchange topology mapping: %v", err)
 	}
 
 	// Instantiate Hexagonal Core Dependencies
@@ -72,8 +79,7 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 
-	// REGISTER YOUR NEW AUTH HANDLER LAYER HERE 🚀
-	authHandler := grpcDelivery.NewAuthGRPCHandler(authUseCase) // adjust 'grpcDelivery' alias as needed based on your imports
+	authHandler := grpcDelivery.NewAuthGRPCHandler(authUseCase)
 	authpb.RegisterAuthServiceServer(grpcServer, authHandler)
 	
 	log.Printf("Auth Microservice engine is fully idling on port %s. Listening...", cfg.GRPCPort)

@@ -38,15 +38,36 @@ func (p *eventPublisher) PublishUserRegistered(ctx context.Context, username, em
 		return err
 	}
 
+	// CHANGED FROM "" TO "auth.events" HERE:
 	return p.amqpChan.PublishWithContext(ctx,
-		"",                     // Exchange
-		"auth.user_registered", // Routing key / Queue name
-		false,                  // Mandatory
-		false,                  // Immediate
+		"auth.events",          // Exchange matching our consumer 🚀
+		"auth.user_registered", // Routing key
+		false,                  
+		false,                  
 		amqp091.Publishing{
 			ContentType:  "application/json",
-			DeliveryMode: amqp091.Persistent, // Keeps message safe if broker restarts
+			DeliveryMode: amqp091.Persistent, 
 			Body:         body,
+		},
+	)
+}
+
+func (p *eventPublisher) PublishUserVerified(ctx context.Context, username, email string) error {
+	payload := map[string]string{
+		"username": username,
+		"email":    email,
+	}
+	
+	body, _ := json.Marshal(payload)
+	
+	return p.amqpChan.PublishWithContext(ctx,
+		"auth.events",          // Exchange name
+		"auth.user_verified",   // Routing key 🚀
+		false,
+		false,
+		amqp091.Publishing{
+			ContentType: "application/json",
+			Body:        body,
 		},
 	)
 }

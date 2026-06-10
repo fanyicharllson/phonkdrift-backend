@@ -9,6 +9,18 @@ service AuthService {
     rpc RegisterUser (RegisterRequest) returns (RegisterResponse);
     rpc LoginUser (LoginRequest) returns (LoginResponse);
     rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+    rpc VerifyCode (VerifyRequest) returns (VerifyResponse);
+}
+
+
+message VerifyRequest {
+    string email = 1;
+    string code = 2;
+}
+
+message VerifyResponse {
+    bool success = 1;
+    string message = 2;
 }
 
 message RegisterRequest {

@@ -44,3 +44,17 @@ func (h *AuthGRPCHandler) RegisterUser(ctx context.Context, req *authpb.Register
 		Message: "Registration successful! Check your email for your verification code.",
 	}, nil
 }
+
+func (h *AuthGRPCHandler) VerifyCode(ctx context.Context, req *authpb.VerifyRequest) (*authpb.VerifyResponse, error) {
+	// Execute the core validation business constraints
+	success, err := h.useCase.VerifyCode(ctx, req.GetEmail(), req.GetCode())
+	if err != nil {
+		// Return a clean gRPC status code error to the mobile app
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &authpb.VerifyResponse{
+		Success: success,
+		Message: "Your profile has been successfully verified! Welcome to PhonkDrift. ✓",
+	}, nil
+}

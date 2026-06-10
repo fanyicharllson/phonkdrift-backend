@@ -10,6 +10,11 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     avatar_url TEXT DEFAULT '',
     is_verified BOOLEAN DEFAULT FALSE,
+
+    -- ADD THESE TWO LINES HERE:
+    verification_code VARCHAR(6),
+    code_expires_at TIMESTAMP WITH TIME ZONE,
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -17,3 +22,4 @@ CREATE TABLE IF NOT EXISTS users (
 -- Optimize login performance by creating an index over the lookup criteria fields
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_is_verified ON users(is_verified);
