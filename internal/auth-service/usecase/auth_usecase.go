@@ -187,9 +187,7 @@ func (u *authUseCase) GetUser(ctx context.Context, userID string) (*domain.User,
 func (u *authUseCase) ForgotPassword(ctx context.Context, email string) error {
 	user, err := u.repo.GetUserByEmail(ctx, strings.ToLower(strings.TrimSpace(email)))
 	if err != nil || user == nil {
-		// Security tip: returning nil or a generic message prevents email enumeration attacks,
-		// but since we want clean feedback for our app, we'll return an error if not found.
-		return errors.New("user with this email does not exist")
+		return nil
 	}
 
 	vCode, expiresAt := generateCode()
@@ -199,8 +197,8 @@ func (u *authUseCase) ForgotPassword(ctx context.Context, email string) error {
 	if err != nil {
 		return fmt.Errorf("failed to generate reset token: %w", err)
 	}
-	
-	_ = u.publisher.PublishUserRegistered(ctx, user.Username, user.Email, vCode) 
+
+	_ = u.publisher.PublishUserRegistered(ctx, user.Username, user.Email, vCode)
 
 	return nil
 }
@@ -229,7 +227,7 @@ func (u *authUseCase) ResetPassword(ctx context.Context, email, code, newPasswor
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
-	
+
 	err = u.repo.UpdatePassword(ctx, details.UserID, string(hashedPassword))
 	if err != nil {
 		return fmt.Errorf("failed to save new password: %w", err)

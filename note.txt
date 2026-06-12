@@ -65,3 +65,68 @@ If you are purely working locally, haven't pushed your code to GitHub yet, and c
 But once your code is pushed to GitHub or shared with other services, you must **always create a new migration version to move forward.**
 
 Now that our database schema tracking is safely initialized, do you want to install `sqlc` next so we can auto-generate the type-safe Go code for querying this new `users` table?
+
+phonkdrift-backend/
+├── internal/
+│   ├── api-gateway/
+│   │   ├── config/
+│   │   │   └── config.go
+│   │   ├── delivery/
+│   │   │   ├── http/
+│   │   │   │   ├── auth_handler.go
+│   │   │   │   └── middleware.go
+│   │   │   └── grpc_proxy/
+│   │   │       └── proxy.go
+│   │   └── main.go
+
+
+package server
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/fanyicharllson/phonkdrift-backend/internal/api-gateway/config"
+	"github.com/fanyicharllson/phonkdrift-backend/pb/auth"
+	// "github.com/fanyicharllson/phonkdrift-backend/pb/track" // When you generate your track protos 🚀
+	// "github.com/fanyicharllson/phonkdrift-backend/pb/chat"  // When you generate your chat protos 🚀
+
+	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+type GatewayServer struct {
+	cfg         *config.Config
+	authClient  auth.AuthServiceClient
+	// trackClient track.TrackServiceClient // Ready to add later! 🚀
+	// chatClient  chat.ChatServiceClient  // Ready to add later! 🚀
+}
+
+func Run(cfg *config.Config) error {
+	// 1. Dial connections to ALL internal services using NewClient
+	authConn, err := grpc.NewClient(cfg.AuthServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Failed to connect to Auth Service: %v", err)
+	}
+	defer authConn.Close()
+
+	/* Un-comment these as you build the services!
+	trackConn, err := grpc.NewClient(cfg.TrackServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil { log.Fatalf("Failed to connect to Track Service: %v", err) }
+	defer trackConn.Close()
+	*/
+
+	// 2. Initialize the stubs
+	server := &GatewayServer{
+		cfg:        cfg,
+		authClient: auth.NewAuthServiceClient(authConn),
+		// trackClient: track.NewTrackServiceClient(trackConn),
+	}
+
+	// 3. Start the delivery systems
+	go server.StartHTTPServer()
+	
+	server.StartGRPCProxy()
+	return nil
+}
