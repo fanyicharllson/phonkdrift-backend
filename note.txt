@@ -79,6 +79,10 @@ phonkdrift-backend/
 │   │   │       └── proxy.go
 │   │   └── main.go
 
+migrations
+# For track migrations up
+migrate -path internal/track-service/repository/migrations -database $env:TRACK_DB_SOURCE -verbose up
+
 
 package server
 

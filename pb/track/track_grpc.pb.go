@@ -19,23 +19,33 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TrackService_SearchTrack_FullMethodName       = "/track.TrackService/SearchTrack"
-	TrackService_GetStreamURL_FullMethodName      = "/track.TrackService/GetStreamURL"
-	TrackService_GetTrendingTracks_FullMethodName = "/track.TrackService/GetTrendingTracks"
+	TrackService_SearchTrack_FullMethodName           = "/track.TrackService/SearchTrack"
+	TrackService_GetStreamURL_FullMethodName          = "/track.TrackService/GetStreamURL"
+	TrackService_GetTrendingTracks_FullMethodName     = "/track.TrackService/GetTrendingTracks"
+	TrackService_SyncPlaybackTelemetry_FullMethodName = "/track.TrackService/SyncPlaybackTelemetry"
+	TrackService_GetRecentlyPlayed_FullMethodName     = "/track.TrackService/GetRecentlyPlayed"
+	TrackService_SetTrackInteraction_FullMethodName   = "/track.TrackService/SetTrackInteraction"
+	TrackService_CreatePlaylist_FullMethodName        = "/track.TrackService/CreatePlaylist"
+	TrackService_AddToPlaylist_FullMethodName         = "/track.TrackService/AddToPlaylist"
 )
 
 // TrackServiceClient is the client API for TrackService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// Service handling music discovery, streaming links, and trend triggers
+// Service managing track playback metadata, streaming sessions, and user interactions
 type TrackServiceClient interface {
-	// Client searches for a Phonk track
+	// 🔍 TRACK DISCOVERY LAYER
 	SearchTrack(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
-	// Fetches the direct, temporary streaming link (handled by Go + yt-dlp)
 	GetStreamURL(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (*StreamResponse, error)
-	// Fetches top trending tracks to display on the home screen
 	GetTrendingTracks(ctx context.Context, in *TrendingRequest, opts ...grpc.CallOption) (*TrendingResponse, error)
+	// 🔄 TELEMETRY & PLAYBACK SYNC LAYER (SoundCloud Style)
+	SyncPlaybackTelemetry(ctx context.Context, in *PlaybackTelemetryRequest, opts ...grpc.CallOption) (*PlaybackTelemetryResponse, error)
+	GetRecentlyPlayed(ctx context.Context, in *RecentlyPlayedRequest, opts ...grpc.CallOption) (*RecentlyPlayedResponse, error)
+	// 📁 USER LIBRARY & PLAYLIST LAYER
+	SetTrackInteraction(ctx context.Context, in *InteractionRequest, opts ...grpc.CallOption) (*InteractionResponse, error)
+	CreatePlaylist(ctx context.Context, in *CreatePlaylistRequest, opts ...grpc.CallOption) (*PlaylistResponse, error)
+	AddToPlaylist(ctx context.Context, in *PlaylistTrackRequest, opts ...grpc.CallOption) (*PlaylistActionResponse, error)
 }
 
 type trackServiceClient struct {
@@ -76,18 +86,73 @@ func (c *trackServiceClient) GetTrendingTracks(ctx context.Context, in *Trending
 	return out, nil
 }
 
+func (c *trackServiceClient) SyncPlaybackTelemetry(ctx context.Context, in *PlaybackTelemetryRequest, opts ...grpc.CallOption) (*PlaybackTelemetryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PlaybackTelemetryResponse)
+	err := c.cc.Invoke(ctx, TrackService_SyncPlaybackTelemetry_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) GetRecentlyPlayed(ctx context.Context, in *RecentlyPlayedRequest, opts ...grpc.CallOption) (*RecentlyPlayedResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecentlyPlayedResponse)
+	err := c.cc.Invoke(ctx, TrackService_GetRecentlyPlayed_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) SetTrackInteraction(ctx context.Context, in *InteractionRequest, opts ...grpc.CallOption) (*InteractionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InteractionResponse)
+	err := c.cc.Invoke(ctx, TrackService_SetTrackInteraction_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) CreatePlaylist(ctx context.Context, in *CreatePlaylistRequest, opts ...grpc.CallOption) (*PlaylistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PlaylistResponse)
+	err := c.cc.Invoke(ctx, TrackService_CreatePlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) AddToPlaylist(ctx context.Context, in *PlaylistTrackRequest, opts ...grpc.CallOption) (*PlaylistActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PlaylistActionResponse)
+	err := c.cc.Invoke(ctx, TrackService_AddToPlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TrackServiceServer is the server API for TrackService service.
 // All implementations must embed UnimplementedTrackServiceServer
 // for forward compatibility.
 //
-// Service handling music discovery, streaming links, and trend triggers
+// Service managing track playback metadata, streaming sessions, and user interactions
 type TrackServiceServer interface {
-	// Client searches for a Phonk track
+	// 🔍 TRACK DISCOVERY LAYER
 	SearchTrack(context.Context, *SearchRequest) (*SearchResponse, error)
-	// Fetches the direct, temporary streaming link (handled by Go + yt-dlp)
 	GetStreamURL(context.Context, *StreamRequest) (*StreamResponse, error)
-	// Fetches top trending tracks to display on the home screen
 	GetTrendingTracks(context.Context, *TrendingRequest) (*TrendingResponse, error)
+	// 🔄 TELEMETRY & PLAYBACK SYNC LAYER (SoundCloud Style)
+	SyncPlaybackTelemetry(context.Context, *PlaybackTelemetryRequest) (*PlaybackTelemetryResponse, error)
+	GetRecentlyPlayed(context.Context, *RecentlyPlayedRequest) (*RecentlyPlayedResponse, error)
+	// 📁 USER LIBRARY & PLAYLIST LAYER
+	SetTrackInteraction(context.Context, *InteractionRequest) (*InteractionResponse, error)
+	CreatePlaylist(context.Context, *CreatePlaylistRequest) (*PlaylistResponse, error)
+	AddToPlaylist(context.Context, *PlaylistTrackRequest) (*PlaylistActionResponse, error)
 	mustEmbedUnimplementedTrackServiceServer()
 }
 
@@ -106,6 +171,21 @@ func (UnimplementedTrackServiceServer) GetStreamURL(context.Context, *StreamRequ
 }
 func (UnimplementedTrackServiceServer) GetTrendingTracks(context.Context, *TrendingRequest) (*TrendingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTrendingTracks not implemented")
+}
+func (UnimplementedTrackServiceServer) SyncPlaybackTelemetry(context.Context, *PlaybackTelemetryRequest) (*PlaybackTelemetryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SyncPlaybackTelemetry not implemented")
+}
+func (UnimplementedTrackServiceServer) GetRecentlyPlayed(context.Context, *RecentlyPlayedRequest) (*RecentlyPlayedResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRecentlyPlayed not implemented")
+}
+func (UnimplementedTrackServiceServer) SetTrackInteraction(context.Context, *InteractionRequest) (*InteractionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetTrackInteraction not implemented")
+}
+func (UnimplementedTrackServiceServer) CreatePlaylist(context.Context, *CreatePlaylistRequest) (*PlaylistResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreatePlaylist not implemented")
+}
+func (UnimplementedTrackServiceServer) AddToPlaylist(context.Context, *PlaylistTrackRequest) (*PlaylistActionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddToPlaylist not implemented")
 }
 func (UnimplementedTrackServiceServer) mustEmbedUnimplementedTrackServiceServer() {}
 func (UnimplementedTrackServiceServer) testEmbeddedByValue()                      {}
@@ -182,6 +262,96 @@ func _TrackService_GetTrendingTracks_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TrackService_SyncPlaybackTelemetry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PlaybackTelemetryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).SyncPlaybackTelemetry(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_SyncPlaybackTelemetry_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).SyncPlaybackTelemetry(ctx, req.(*PlaybackTelemetryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_GetRecentlyPlayed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecentlyPlayedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).GetRecentlyPlayed(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_GetRecentlyPlayed_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).GetRecentlyPlayed(ctx, req.(*RecentlyPlayedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_SetTrackInteraction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InteractionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).SetTrackInteraction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_SetTrackInteraction_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).SetTrackInteraction(ctx, req.(*InteractionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_CreatePlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePlaylistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).CreatePlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_CreatePlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).CreatePlaylist(ctx, req.(*CreatePlaylistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_AddToPlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PlaylistTrackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).AddToPlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_AddToPlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).AddToPlaylist(ctx, req.(*PlaylistTrackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TrackService_ServiceDesc is the grpc.ServiceDesc for TrackService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -200,6 +370,26 @@ var TrackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTrendingTracks",
 			Handler:    _TrackService_GetTrendingTracks_Handler,
+		},
+		{
+			MethodName: "SyncPlaybackTelemetry",
+			Handler:    _TrackService_SyncPlaybackTelemetry_Handler,
+		},
+		{
+			MethodName: "GetRecentlyPlayed",
+			Handler:    _TrackService_GetRecentlyPlayed_Handler,
+		},
+		{
+			MethodName: "SetTrackInteraction",
+			Handler:    _TrackService_SetTrackInteraction_Handler,
+		},
+		{
+			MethodName: "CreatePlaylist",
+			Handler:    _TrackService_CreatePlaylist_Handler,
+		},
+		{
+			MethodName: "AddToPlaylist",
+			Handler:    _TrackService_AddToPlaylist_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

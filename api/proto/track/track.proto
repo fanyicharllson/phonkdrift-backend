@@ -4,26 +4,38 @@ package track;
 
 option go_package = "github.com/fanyicharllson/phonkdrift-backend/pb/track;trackpb";
 
-// Service handling music discovery, streaming links, and trend triggers
+// Service managing track playback metadata, streaming sessions, and user interactions
 service TrackService {
-    // Client searches for a Phonk track
+    // 🔍 TRACK DISCOVERY LAYER
     rpc SearchTrack (SearchRequest) returns (SearchResponse);
-    
-    // Fetches the direct, temporary streaming link (handled by Go + yt-dlp)
     rpc GetStreamURL (StreamRequest) returns (StreamResponse);
-    
-    // Fetches top trending tracks to display on the home screen
     rpc GetTrendingTracks (TrendingRequest) returns (TrendingResponse);
+
+    // 🔄 TELEMETRY & PLAYBACK SYNC LAYER (SoundCloud Style)
+    rpc SyncPlaybackTelemetry (PlaybackTelemetryRequest) returns (PlaybackTelemetryResponse);
+    rpc GetRecentlyPlayed (RecentlyPlayedRequest) returns (RecentlyPlayedResponse);
+
+    // 📁 USER LIBRARY & PLAYLIST LAYER
+    rpc SetTrackInteraction (InteractionRequest) returns (InteractionResponse);
+    rpc CreatePlaylist (CreatePlaylistRequest) returns (PlaylistResponse);
+    rpc AddToPlaylist (PlaylistTrackRequest) returns (PlaylistActionResponse);
 }
+
+// --- CORE DATA TYPES ---
 
 message TrackMetadata {
     string track_id = 1;
     string title = 2;
-    string artist = 3;
-    string duration = 4;
-    string thumbnail_url = 5;
-    string original_youtube_id = 6;
+    string artist_id = 3;
+    string artist_name = 4;
+    string duration = 5; // Format: "MM:SS"
+    string thumbnail_url = 6;
+    string original_youtube_id = 7;
+    int32 play_count = 8;
+    int32 likes_count = 9;
 }
+
+// --- DISCOVERY MESSAGES ---
 
 message SearchRequest {
     string query = 1;
@@ -31,7 +43,7 @@ message SearchRequest {
 }
 
 message SearchResponse {
-    repeated TrackMetadata tracks = 1; // "repeated" means an Array/List in Dart/Go
+    repeated TrackMetadata tracks = 1;
 }
 
 message StreamRequest {
@@ -40,8 +52,8 @@ message StreamRequest {
 }
 
 message StreamResponse {
-    string stream_url = 1;        // The high-speed direct stream link
-    int64 link_expires_at = 2;    // Unix timestamp when the link dies
+    string stream_url = 1;
+    int64 link_expires_at = 2; // Unix timestamp
 }
 
 message TrendingRequest {
@@ -50,4 +62,60 @@ message TrendingRequest {
 
 message TrendingResponse {
     repeated TrackMetadata tracks = 1;
+}
+
+// --- TELEMETRY & HISTORY MESSAGES ---
+
+message PlaybackTelemetryRequest {
+    string user_id = 1;
+    string track_id = 2;
+    int32 last_position_seconds = 3;
+    bool is_completed = 4;
+}
+
+message PlaybackTelemetryResponse {
+    bool success = 1;
+}
+
+message RecentlyPlayedRequest {
+    string user_id = 1;
+    int32 limit = 2;
+}
+
+message RecentlyPlayedResponse {
+    repeated TrackMetadata tracks = 1;
+}
+
+// --- INTERACTION MESSAGES ---
+
+message InteractionRequest {
+    string user_id = 1;
+    string track_id = 2;
+    bool is_liked = 3; // true = like, false = dislike
+}
+
+message InteractionResponse {
+    bool success = 1;
+}
+
+message CreatePlaylistRequest {
+    string user_id = 1;
+    string name = 2;
+    string cover_image_url = 3;
+}
+
+message PlaylistResponse {
+    string playlist_id = 1;
+    string name = 2;
+    string user_id = 3;
+}
+
+message PlaylistTrackRequest {
+    string playlist_id = 1;
+    string track_id = 2;
+}
+
+message PlaylistActionResponse {
+    bool success = 1;
+    string message = 2;
 }

@@ -1,5 +1,6 @@
 version: "2"
 sql:
+# Auth Service Storage Definition
   - schema: "internal/auth-service/repository/migrations"
     queries: "internal/auth-service/repository/queries"
     engine: "postgresql" 
@@ -10,3 +11,15 @@ sql:
         emit_json_tags: true
         emit_prepared_queries: false
         emit_interface: true
+
+# Track Service Storage Definition
+  - schema: "internal/track-service/repository/migrations"
+    queries: "internal/track-service/repository/queries"
+    engine: "postgresql"
+    gen:
+      go:
+        package: "db"
+        out: "internal/track-service/repository/db"
+        emit_json_tags: true
+        emit_prepared_queries: false
+        emit_interface: true        
