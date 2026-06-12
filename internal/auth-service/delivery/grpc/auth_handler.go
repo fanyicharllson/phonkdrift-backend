@@ -116,3 +116,35 @@ func (h *AuthGRPCHandler) GetUser(ctx context.Context, req *authpb.GetUserReques
 		},
 	}, nil
 }
+
+func (h *AuthGRPCHandler) ForgotPassword(ctx context.Context, req *authpb.ForgotPasswordRequest) (*authpb.ForgotPasswordResponse, error) {
+	err := h.useCase.ForgotPassword(ctx, req.GetEmail())
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+	return &authpb.ForgotPasswordResponse{
+		Success: true,
+		Message: "Password reset code sent successfully to your email.",
+	}, nil
+}
+
+func (h *AuthGRPCHandler) ResetPassword(ctx context.Context, req *authpb.ResetPasswordRequest) (*authpb.ResetPasswordResponse, error) {
+	err := h.useCase.ResetPassword(ctx, req.GetEmail(), req.GetCode(), req.GetNewPassword())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	return &authpb.ResetPasswordResponse{
+		Success: true,
+		Message: "Your password has been reset successfully. You can now login.",
+	}, nil
+}
+
+func (h *AuthGRPCHandler) VerifyResetCode(ctx context.Context, req *authpb.VerifyResetCodeRequest) (*authpb.VerifyResetCodeResponse, error) {
+	success, err := h.useCase.VerifyResetCode(ctx, req.GetEmail(), req.GetCode())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	return &authpb.VerifyResetCodeResponse{
+		Success: success,
+	}, nil
+}

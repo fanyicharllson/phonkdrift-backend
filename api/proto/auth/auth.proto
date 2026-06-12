@@ -6,81 +6,113 @@ option go_package = "github.com/fanyicharllson/phonkdrift-backend/pb/auth;authpb
 
 // The authentication and profile manager service
 service AuthService {
-    rpc RegisterUser (RegisterRequest) returns (RegisterResponse);
-    rpc LoginUser (LoginRequest) returns (LoginResponse);
-    rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
-    rpc VerifyCode (VerifyRequest) returns (VerifyResponse);
-    rpc ResendCode (ResendCodeRequest) returns (ResendCodeResponse); // Added 
-    rpc GetUser (GetUserRequest) returns (GetUserResponse);           // Added 
+  rpc RegisterUser (RegisterRequest) returns (RegisterResponse);
+  rpc LoginUser (LoginRequest) returns (LoginResponse);
+  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc VerifyCode (VerifyRequest) returns (VerifyResponse);
+  rpc ResendCode (ResendCodeRequest) returns (ResendCodeResponse);
+  rpc GetUser (GetUserRequest) returns (GetUserResponse);
+  rpc ForgotPassword (ForgotPasswordRequest) returns (ForgotPasswordResponse);
+  rpc ResetPassword (ResetPasswordRequest) returns (ResetPasswordResponse);
+  rpc VerifyResetCode (VerifyResetCodeRequest) returns (VerifyResetCodeResponse);
 }
 
 message RegisterRequest {
-    string username = 1;
-    string email = 2;
-    string password = 3;
+  string username = 1;
+  string email    = 2;
+  string password = 3;
 }
 
 message RegisterResponse {
-    string user_id = 1;
-    string message = 2;
+  string user_id = 1;
+  string message = 2;
 }
 
 message VerifyRequest {
+  string email = 1;
+  string code  = 2;
+}
+
+message VerifyResponse {
+  bool   success    = 1;
+  string message    = 2;
+  string token      = 3;        // Added for auto-login
+  int64  expires_at = 4;    // Added for auto-login
+  string user_id    = 5;      // Added for auto-login
+}
+
+message LoginRequest {
+  string email    = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token      = 1;
+  string user_id    = 2;
+  int64  expires_at = 3;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool   is_valid = 1;
+  string user_id  = 2;
+  string username = 3;
+}
+
+// Added for ResendCode
+message ResendCodeRequest {
+  string email = 1;
+}
+
+message ResendCodeResponse {
+  bool   success = 1;
+  string message = 2;
+}
+
+// Added for GetUser
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message User {
+  string user_id    = 1;
+  string username   = 2;
+  string email      = 3;
+  string avatar_url = 4;
+}
+
+message ForgotPasswordRequest {
+  string email = 1;
+}
+
+message ForgotPasswordResponse {
+  bool   success = 1;
+  string message = 2;
+}
+
+message ResetPasswordRequest {
+  string email        = 1;
+  string code         = 2;
+  string new_password = 3;
+}
+
+message ResetPasswordResponse {
+  bool   success = 1;
+  string message = 2;
+}
+message VerifyResetCodeRequest {
     string email = 1;
     string code = 2;
 }
 
-message VerifyResponse {
+message VerifyResetCodeResponse {
     bool success = 1;
-    string message = 2;
-    string token = 3;        // Added for auto-login 
-    int64 expires_at = 4;    // Added for auto-login 
-    string user_id = 5;      // Added for auto-login 
-}
-
-message LoginRequest {
-    string email = 1;
-    string password = 2;
-}
-
-message LoginResponse {
-    string token = 1;
-    string user_id = 2;
-    int64 expires_at = 3;
-}
-
-message ValidateTokenRequest {
-    string token = 1;
-}
-
-message ValidateTokenResponse {
-    bool is_valid = 1;
-    string user_id = 2;
-    string username = 3;
-}
-
-// Added for ResendCode 
-message ResendCodeRequest {
-    string email = 1;
-}
-
-message ResendCodeResponse {
-    bool success = 1;
-    string message = 2;
-}
-
-// Added for GetUser 
-message GetUserRequest {
-    string user_id = 1;
-}
-
-message GetUserResponse {
-    User user = 1;
-}
-
-message User {
-    string user_id = 1;
-    string username = 2;
-    string email = 3;
-    string avatar_url = 4;
+    string reset_token = 2; // Short-lived token purely for password updating
 }

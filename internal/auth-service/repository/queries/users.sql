@@ -34,3 +34,11 @@ SET is_verified = @is_verified::boolean,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = @id::uuid
 RETURNING *;
+
+-- name: UpdatePassword :exec
+UPDATE users
+SET password_hash = @password_hash::text,
+    verification_code = NULL,
+    code_expires_at = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = @id::uuid;

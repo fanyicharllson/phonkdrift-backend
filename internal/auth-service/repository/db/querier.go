@@ -15,6 +15,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, dollar_1 string) (User, error)
 	GetUserByID(ctx context.Context, dollar_1 uuid.UUID) (User, error)
 	GetVerificationDetails(ctx context.Context, dollar_1 string) (GetVerificationDetailsRow, error)
+	UpdatePassword(ctx context.Context, arg UpdatePasswordParams) error
 	UpdateUserVerification(ctx context.Context, arg UpdateUserVerificationParams) (User, error)
 	UpdateUserVerificationCode(ctx context.Context, arg UpdateUserVerificationCodeParams) error
 }

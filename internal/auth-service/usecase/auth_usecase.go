@@ -184,6 +184,77 @@ func (u *authUseCase) GetUser(ctx context.Context, userID string) (*domain.User,
 	return user, nil
 }
 
+func (u *authUseCase) ForgotPassword(ctx context.Context, email string) error {
+	user, err := u.repo.GetUserByEmail(ctx, strings.ToLower(strings.TrimSpace(email)))
+	if err != nil || user == nil {
+		// Security tip: returning nil or a generic message prevents email enumeration attacks,
+		// but since we want clean feedback for our app, we'll return an error if not found.
+		return errors.New("user with this email does not exist")
+	}
+
+	vCode, expiresAt := generateCode()
+
+	// Reuse repository method to save the fresh code and push out the expiration window
+	err = u.repo.UpdateUserVerificationCode(ctx, user.Email, vCode, expiresAt)
+	if err != nil {
+		return fmt.Errorf("failed to generate reset token: %w", err)
+	}
+	
+	_ = u.publisher.PublishUserRegistered(ctx, user.Username, user.Email, vCode) 
+
+	return nil
+}
+
+func (u *authUseCase) ResetPassword(ctx context.Context, email, code, newPassword string) error {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if len(newPassword) < 6 {
+		return errors.New("password must be at least 6 characters long")
+	}
+
+	details, err := u.repo.GetVerificationDetails(ctx, email)
+	if err != nil || details == nil {
+		return errors.New("verification details not found")
+	}
+
+	if time.Now().After(details.CodeExpiresAt) {
+		return errors.New("reset code has expired")
+	}
+
+	if details.VerificationCode != code {
+		return errors.New("invalid reset code")
+	}
+
+	// Securely hash the new incoming password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+	
+	err = u.repo.UpdatePassword(ctx, details.UserID, string(hashedPassword))
+	if err != nil {
+		return fmt.Errorf("failed to save new password: %w", err)
+	}
+
+	return nil
+}
+
+func (u *authUseCase) VerifyResetCode(ctx context.Context, email, code string) (bool, error) {
+	details, err := u.repo.GetVerificationDetails(ctx, strings.ToLower(strings.TrimSpace(email)))
+	if err != nil || details == nil {
+		return false, errors.New("reset details not found")
+	}
+
+	if time.Now().After(details.CodeExpiresAt) {
+		return false, errors.New("reset code has expired")
+	}
+
+	if details.VerificationCode != code {
+		return false, errors.New("invalid verification code")
+	}
+
+	return true, nil
+}
+
 // Helpers
 func generateCode() (string, time.Time) {
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))

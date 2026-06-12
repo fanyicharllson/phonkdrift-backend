@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"time"
+	"fmt"
 
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/domain"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/repository/db"
@@ -127,5 +128,17 @@ func (r *authRepository) UpdateUserVerificationCode(ctx context.Context, email, 
 		Email:            email,
 		VerificationCode: vCode,
 		CodeExpiresAt:    expiresAt,
+	})
+}
+
+func (r *authRepository) UpdatePassword(ctx context.Context, userID string, hashedPassword string) error {
+	parsedUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return fmt.Errorf("invalid user uuid structure: %w", err)
+	}
+
+	return r.queries.UpdatePassword(ctx, db.UpdatePasswordParams{
+		ID:           parsedUUID,
+		PasswordHash: hashedPassword,
 	})
 }

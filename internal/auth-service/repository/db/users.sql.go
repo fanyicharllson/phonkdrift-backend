@@ -132,6 +132,25 @@ func (q *Queries) GetVerificationDetails(ctx context.Context, dollar_1 string) (
 	return i, err
 }
 
+const updatePassword = `-- name: UpdatePassword :exec
+UPDATE users
+SET password_hash = $1::text,
+    verification_code = NULL,
+    code_expires_at = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $2::uuid
+`
+
+type UpdatePasswordParams struct {
+	PasswordHash string    `json:"password_hash"`
+	ID           uuid.UUID `json:"id"`
+}
+
+func (q *Queries) UpdatePassword(ctx context.Context, arg UpdatePasswordParams) error {
+	_, err := q.db.ExecContext(ctx, updatePassword, arg.PasswordHash, arg.ID)
+	return err
+}
+
 const updateUserVerification = `-- name: UpdateUserVerification :one
 UPDATE users
 SET is_verified = $1::boolean, 
