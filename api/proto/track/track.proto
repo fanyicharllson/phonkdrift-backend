@@ -6,16 +6,16 @@ option go_package = "github.com/fanyicharllson/phonkdrift-backend/pb/track;track
 
 // Service managing track playback metadata, streaming sessions, and user interactions
 service TrackService {
-    // 🔍 TRACK DISCOVERY LAYER
+    // TRACK DISCOVERY LAYER
     rpc SearchTrack (SearchRequest) returns (SearchResponse);
     rpc GetStreamURL (StreamRequest) returns (StreamResponse);
     rpc GetTrendingTracks (TrendingRequest) returns (TrendingResponse);
 
-    // 🔄 TELEMETRY & PLAYBACK SYNC LAYER (SoundCloud Style)
+    // TELEMETRY & PLAYBACK SYNC LAYER (SoundCloud Style)
     rpc SyncPlaybackTelemetry (PlaybackTelemetryRequest) returns (PlaybackTelemetryResponse);
     rpc GetRecentlyPlayed (RecentlyPlayedRequest) returns (RecentlyPlayedResponse);
 
-    // 📁 USER LIBRARY & PLAYLIST LAYER
+    //  USER LIBRARY & PLAYLIST LAYER
     rpc SetTrackInteraction (InteractionRequest) returns (InteractionResponse);
     rpc CreatePlaylist (CreatePlaylistRequest) returns (PlaylistResponse);
     rpc AddToPlaylist (PlaylistTrackRequest) returns (PlaylistActionResponse);

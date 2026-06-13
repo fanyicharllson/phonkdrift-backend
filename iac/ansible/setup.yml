@@ -1,0 +1,40 @@
+---
+- name: Production VPS Security Hardening & Setup
+  hosts: localhost
+  connection: local
+  become: yes
+  tasks:
+    - name: Ensure system repository index cache is up to date
+      apt:
+        update_cache: yes
+        upgrade: safe
+
+    - name: Install fundamental system operational dependencies
+      apt:
+        name:
+          - curl
+          - git
+          - ufw
+          - fail2ban
+        state: present
+
+    - name: Configure Secure Network Firewall Layer
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - '22'    # Secure SSH Management access
+        - '80'    # Public Web API HTTP Entrypoint
+        - '443'   # Public Web API HTTPS SSL Entrypoint
+        - '50050' # Public Mobile App gRPC Gateway Entrypoint
+
+    - name: Force enable UFW Firewall Protection System
+      ufw:
+        state: enabled
+
+    - name: Verify fail2ban security service is running to prevent brute force attacks
+      service:
+        name: fail2ban
+        state: started
+        enabled: yes

@@ -7,14 +7,17 @@ import (
 	"github.com/fanyicharllson/phonkdrift-backend/internal/api-gateway/config"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/api-gateway/delivery/http"
 	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
+	trackpb "github.com/fanyicharllson/phonkdrift-backend/pb/track"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 type GatewayServer struct {
 	authpb.UnimplementedAuthServiceServer
+	trackpb.UnimplementedTrackServiceServer
 	Cfg        *config.Config
 	AuthClient authpb.AuthServiceClient
+	trackProxy *TrackProxy
 }
 
 func Run(cfg *config.Config) error {
@@ -23,11 +26,18 @@ func Run(cfg *config.Config) error {
 	if err != nil {
 		log.Fatalf("Failed to connect to Auth Service: %v", err)
 	}
-	defer authConn.Close()
+	
+
+	// Connect to internal Track microservice
+	trackProxy, err := NewTrackProxy(cfg.TrackServiceAddr) 
+	if err != nil {
+		log.Fatalf("Failed to connect to internal Track Microservice: %v", err)
+	}
 
 	server := &GatewayServer{
 		Cfg:        cfg,
 		AuthClient: authpb.NewAuthServiceClient(authConn),
+		trackProxy: trackProxy,
 	}
 
 	// 1. Run HTTP REST in background for Web/Postman
@@ -46,13 +56,12 @@ func (s *GatewayServer) StartMobileGRPCListener() {
 
 	grpcServer := grpc.NewServer()
 
-	// Register the auth service on the gateway port! 
-	// When mobile hits this port, the gateway wraps the call and sends it down to the client stub.
+	// Register both backend services on the multiplexed gateway port! 
 	authpb.RegisterAuthServiceServer(grpcServer, s)
+	trackpb.RegisterTrackServiceServer(grpcServer, s)
 
-	log.Printf("gRPC Mobile Proxy listening safely on port %s 📱", s.Cfg.GRPCPort)
+	log.Printf("gRPC Mobile Proxy listening safely on port %s 📱🚀", s.Cfg.GRPCPort)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve mobile gRPC traffic: %v", err)
 	}
 }
-

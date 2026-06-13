@@ -1,0 +1,95 @@
+# name: PhonkDrift Continuous Integration & Deployment Pipeline
+
+# on:
+#   push:
+#     branches: [ "main" ]
+
+# jobs:
+#   security-audit:
+#     name: DevSecOps Code and Vulnerability Scan
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout Source Code repository context
+#         uses: actions/checkout@v4
+
+#       - name: Run Trufflehog Credentials Leakage Scanner
+#         uses: trufflesecurity/trufflehog@main
+#         with:
+#           path: ./
+#           base: ""
+#           head: "HEAD"
+#           extra_args: --debug --only-verified
+
+#       - name: Scan Code Matrix for Security Vulnerabilities (Trivy)
+#         uses: aquasecurity/trivy-action@master
+#         with:
+#           scan-type: 'fs'
+#           ignore-unfixed: true
+#           format: 'table'
+#           severity: 'HIGH,CRITICAL'
+
+#   build-and-ship:
+#     name: Container Construction & Registry Export
+#     needs: security-audit
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         service: [api-gateway, auth-service, track-service]
+#     steps:
+#       - name: Checkout Source Code
+#         uses: actions/checkout@v4
+
+#       - name: Log in to Docker Hub Container Repository
+#         uses: docker/login-action@v3
+#         with:
+#           username: ${{ secrets.DOCKERHUB_USERNAME }}
+#           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+#       - name: Build and Scan Image Layer for Structural Flaws
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: .
+#           file: ./internal/${{ matrix.service }}/Dockerfile
+#           push: false
+#           tags: ${{ secrets.DOCKERHUB_USERNAME }}/phonkdrift-${{ matrix.service }}:latest
+
+#       - name: Run Trivy Scanner on compiled image binary layers
+#         uses: aquasecurity/trivy-action@master
+#         with:
+#           image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/phonkdrift-${{ matrix.service }}:latest'
+#           format: 'table'
+#           severity: 'HIGH,CRITICAL'
+
+#       - name: Push Verified Production Image to Registry
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: .
+#           file: ./internal/${{ matrix.service }}/Dockerfile
+#           push: true
+#           tags: ${{ secrets.DOCKERHUB_USERNAME }}/phonkdrift-${{ matrix.service }}:latest
+
+#   k3s-cluster-rollout:
+#     name: Production Kubernetes Zero-Downtime Deployment
+#     needs: build-and-ship
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout Manifests Deployment Configurations
+#         uses: actions/checkout@v4
+
+#       - name: Configure Secure Remote Cluster Kubernetes Access Context
+#         uses: azure/k8s-set-context@v3
+#         with:
+#           method: kubeconfig
+#           kubeconfig: ${{ secrets.KUBECONFIG_DATA }}
+
+#       - name: Substitute Secrets and Inject Production Environment Map Variables
+#         uses: swatinem/rust-cache@v2
+#         with:
+#           key: manifest-env-subst
+
+#       - name: Execute Zero-Downtime Rolling Update Deployment
+#         run: |
+#           # Apply standard cluster runtime structures inside the VPS engine context
+#           kubectl apply -f k8s/redis-deployment.yaml
+#           kubectl apply -f k8s/track-service-deployment.yaml
+#           kubectl rollout restart deployment/track-service-deployment
