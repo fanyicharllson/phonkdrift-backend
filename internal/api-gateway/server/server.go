@@ -4,8 +4,8 @@ import (
 	"log"
 	"net"
 
-	"github.com/fanyicharllson/phonkdrift-backend/internal/api-gateway/config"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/api-gateway/delivery/http"
+	"github.com/fanyicharllson/phonkdrift-backend/internal/config" 
 	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
 	trackpb "github.com/fanyicharllson/phonkdrift-backend/pb/track"
 	"google.golang.org/grpc"
@@ -15,9 +15,10 @@ import (
 type GatewayServer struct {
 	authpb.UnimplementedAuthServiceServer
 	trackpb.UnimplementedTrackServiceServer
-	Cfg        *config.Config
-	AuthClient authpb.AuthServiceClient
-	trackProxy *TrackProxy
+	Cfg         *config.Config 
+	AuthClient  authpb.AuthServiceClient
+	TrackClient trackpb.TrackServiceClient 
+	trackProxy  *TrackProxy
 }
 
 func Run(cfg *config.Config) error {
@@ -26,22 +27,27 @@ func Run(cfg *config.Config) error {
 	if err != nil {
 		log.Fatalf("Failed to connect to Auth Service: %v", err)
 	}
-	
 
 	// Connect to internal Track microservice
-	trackProxy, err := NewTrackProxy(cfg.TrackServiceAddr) 
+	trackConn, err := grpc.NewClient(cfg.TrackServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("Failed to connect to internal Track Microservice: %v", err)
+		log.Fatalf("Failed to establish raw gRPC handle to Track Service: %v", err)
+	}
+
+	trackProxy, err := NewTrackProxy(cfg.TrackServiceAddr)
+	if err != nil {
+		log.Fatalf("Failed to connect to internal Track Microservice proxy context: %v", err)
 	}
 
 	server := &GatewayServer{
-		Cfg:        cfg,
-		AuthClient: authpb.NewAuthServiceClient(authConn),
-		trackProxy: trackProxy,
+		Cfg:         cfg,
+		AuthClient:  authpb.NewAuthServiceClient(authConn),
+		TrackClient: trackpb.NewTrackServiceClient(trackConn), // Instantiate track service connection client layer
+		trackProxy:  trackProxy,
 	}
 
-	// 1. Run HTTP REST in background for Web/Postman
-	go http.StartHTTPServer(server.Cfg, server.AuthClient)
+	// 1. Run HTTP REST in background for Web/Postman - passing BOTH client targets seamlessly!
+	go http.StartHTTPServer(server.Cfg, server.AuthClient, server.TrackClient)
 
 	// 2. Run Mobile gRPC listener (Blocks and keeps main alive)
 	server.StartMobileGRPCListener()
@@ -49,18 +55,19 @@ func Run(cfg *config.Config) error {
 }
 
 func (s *GatewayServer) StartMobileGRPCListener() {
-	lis, err := net.Listen("tcp", s.Cfg.GRPCPort)
+	address := ":" + s.Cfg.ApiGatewayGrpcPort
+	lis, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatalf("Failed to listen for mobile gRPC on port %s: %v", s.Cfg.GRPCPort, err)
+		log.Fatalf("Failed to listen for mobile gRPC on port %s: %v", s.Cfg.ApiGatewayGrpcPort, err)
 	}
 
 	grpcServer := grpc.NewServer()
 
-	// Register both backend services on the multiplexed gateway port! 
+	// Register both backend services on the multiplexed gateway port!
 	authpb.RegisterAuthServiceServer(grpcServer, s)
 	trackpb.RegisterTrackServiceServer(grpcServer, s)
 
-	log.Printf("gRPC Mobile Proxy listening safely on port %s 📱🚀", s.Cfg.GRPCPort)
+	log.Printf("gRPC Mobile Proxy listening safely on port %s 📱🚀", s.Cfg.ApiGatewayGrpcPort)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve mobile gRPC traffic: %v", err)
 	}

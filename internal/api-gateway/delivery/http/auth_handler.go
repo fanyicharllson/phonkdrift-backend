@@ -6,15 +6,17 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/fanyicharllson/phonkdrift-backend/internal/api-gateway/config"
+	"github.com/fanyicharllson/phonkdrift-backend/internal/config" // 💡 CHANGED: Using unified global config
 	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
+	trackpb "github.com/fanyicharllson/phonkdrift-backend/pb/track" // 💡 ADDED: Import track protobuf descriptors
 	"github.com/gin-gonic/gin"
 )
 
-func StartHTTPServer(cfg *config.Config, authClient authpb.AuthServiceClient) {
+// StartHTTPServer accepts BOTH clients to multiplex proxy endpoints out cleanly
+func StartHTTPServer(cfg *config.Config, authClient authpb.AuthServiceClient, trackClient trackpb.TrackServiceClient) {
 	r := gin.Default()
 
-	// Public Auth Delivery Group
+	// 🔑 Public Auth Delivery Group
 	publicAuth := r.Group("/api/v1/auth")
 	{
 		publicAuth.POST("/register", handleRegister(authClient))
@@ -22,8 +24,16 @@ func StartHTTPServer(cfg *config.Config, authClient authpb.AuthServiceClient) {
 		publicAuth.POST("/verify-code", handleVerifyCode(authClient))
 	}
 
-	log.Printf("HTTP REST API Gateway running on port %s 🏎️💨", cfg.HTTPPort)
-	if err := r.Run(cfg.HTTPPort); err != nil {
+	// 🏎️ Public Track Engine Delivery Group (Placeholder for rest testing if needed)
+	// publicTrack := r.Group("/api/v1/tracks")
+	// {
+	//     // You can add HTTP mappings to proxy into trackClient here later!
+	// }
+
+	// Format port address cleanly using unified config structure
+	address := ":" + cfg.ApiGatewayHttpPort
+	log.Printf("HTTP REST API Gateway running on port %s 🏎️💨", address)
+	if err := r.Run(address); err != nil {
 		log.Fatalf("Failed to run HTTP server: %v", err)
 	}
 }

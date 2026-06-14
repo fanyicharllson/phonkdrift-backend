@@ -134,3 +134,6 @@ func Run(cfg *config.Config) error {
 	server.StartGRPCProxy()
 	return nil
 }
+
+api gatway = localhost:50050
+local rabbitmq = http://localhost:15672/#/

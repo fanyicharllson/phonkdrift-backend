@@ -20,6 +20,8 @@ main
 auth-service/.env
 track-service/.env
 
+docker-compose.yml
+
 # IDE specific files
 .idea/
 .vscode/
