@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: auth-service
-        image: charllson717/phonkdrift-auth:latest
+        image: charllson717/phonkdrift-auth-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 50051
@@ -60,7 +60,7 @@ spec:
     spec:
       containers:
       - name: track-service
-        image: charllson717/phonkdrift-track:latest
+        image: charllson717/phonkdrift-track-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 50052
@@ -103,7 +103,7 @@ spec:
     spec:
       containers:
       - name: notification-service
-        image: charllson717/phonkdrift-notification:latest
+        image: charllson717/phonkdrift-notification-service:latest
         imagePullPolicy: Always
         envFrom:
         - configMapRef:
@@ -131,7 +131,7 @@ spec:
     spec:
       containers:
       - name: api-gateway
-        image: charllson717/phonkdrift-gateway:latest
+        image: charllson717/phonkdrift-api-gateway:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
