@@ -64,11 +64,16 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 50052
+       # Drop envFrom for secrets here and use explicit env array:
         envFrom:
         - configMapRef:
             name: phonkdrift-config
-        - secretRef:
-            name: phonkdrift-secrets
+        env:
+        - name: TRACK_DB_SOURCE
+          valueFrom:
+            secretKeyRef:
+              name: phonkdrift-secrets
+              key: TRACK_DB_SOURCE
 ---
 apiVersion: v1
 kind: Service
