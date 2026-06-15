@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: phonkdrift-config
+  namespace: default
+data:
+  API_GATEWAY_HTTP_PORT: "8080"
+  API_GATEWAY_GRPC_PORT: "50050"
+  AUTH_GRPC_PORT: "50051"
+  TRACK_GRPC_PORT: "50052"
+  CHAT_GRPC_PORT: "50053"
+  AUTH_SERVICE_ADDR: "auth-service:50051"
+  TRACK_SERVICE_ADDR: "track-service:50052"
+  CHAT_SERVICE_ADDR: "chat-service:50053"
+  REDIS_ADDR: "redis-service:6379"
+  RABBITMQ_FALLBACK_URL: "amqp://guest:guest@rabbitmq-service:5672/"

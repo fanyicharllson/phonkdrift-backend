@@ -1,0 +1,163 @@
+# ==============================================================================
+# 🔑 AUTHENTICATION MICROSERVICE
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+      - name: auth-service
+        image: charllson717/phonkdrift-auth:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 50051
+        envFrom:
+        - configMapRef:
+            name: phonkdrift-config
+        - secretRef:
+            name: phonkdrift-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+spec:
+  selector:
+    app: auth-service
+  ports:
+  - protocol: TCP
+    port: 50051
+    targetPort: 50051
+  type: ClusterIP
+
+---
+# ==============================================================================
+# 🏎️ TRACK & STREAMING MICROSERVICE
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: track-service-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: track-service
+  template:
+    metadata:
+      labels:
+        app: track-service
+    spec:
+      containers:
+      - name: track-service
+        image: charllson717/phonkdrift-track:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 50052
+        envFrom:
+        - configMapRef:
+            name: phonkdrift-config
+        - secretRef:
+            name: phonkdrift-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: track-service
+spec:
+  selector:
+    app: track-service
+  ports:
+  - protocol: TCP
+    port: 50052
+    targetPort: 50052
+  type: ClusterIP
+
+---
+# ==============================================================================
+# 🔔 NOTIFICATION WORKER ENGINE
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+      - name: notification-service
+        image: charllson717/phonkdrift-notification:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: phonkdrift-config
+        - secretRef:
+            name: phonkdrift-secrets
+
+---
+# ==============================================================================
+# 🔐 API EDGE GATEWAY LAYER
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: charllson717/phonkdrift-gateway:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        - containerPort: 50050
+        envFrom:
+        - configMapRef:
+            name: phonkdrift-config
+        - secretRef:
+            name: phonkdrift-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway-service
+spec:
+  selector:
+    app: api-gateway
+  ports:
+  - name: http-rest
+    protocol: TCP
+    port: 8080
+    targetPort: 8080
+    nodePort: 30080 # Public Web Traffic entrypoint (http://<Cluster-IP>:30080)
+  - name: grpc-mobile
+    protocol: TCP
+    port: 50050
+    targetPort: 50050
+    nodePort: 30050 # Public Mobile gRPC Stream entrypoint (grpc://<Cluster-IP>:30050)
+  type: NodePort
