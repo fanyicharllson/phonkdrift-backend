@@ -24,7 +24,7 @@ spec:
         envFrom:
         - configMapRef:
             name: phonkdrift-config
-        - secretRef:
+        - secretRef:                    # ✅ THIS WAS MISSING
             name: phonkdrift-secrets
 ---
 apiVersion: v1
@@ -64,16 +64,11 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 50052
-       # Drop envFrom for secrets here and use explicit env array:
         envFrom:
         - configMapRef:
             name: phonkdrift-config
-        env:
-        - name: TRACK_DB_SOURCE
-          valueFrom:
-            secretKeyRef:
-              name: phonkdrift-secrets
-              key: TRACK_DB_SOURCE
+        - secretRef:                   
+            name: phonkdrift-secrets
 ---
 apiVersion: v1
 kind: Service
@@ -113,7 +108,7 @@ spec:
         envFrom:
         - configMapRef:
             name: phonkdrift-config
-        - secretRef:
+        - secretRef:                    # ✅ THIS WAS MISSING
             name: phonkdrift-secrets
 
 ---
@@ -159,10 +154,10 @@ spec:
     protocol: TCP
     port: 8080
     targetPort: 8080
-    nodePort: 30080 # Public Web Traffic entrypoint (http://<Cluster-IP>:30080)
+    nodePort: 30080
   - name: grpc-mobile
     protocol: TCP
     port: 50050
     targetPort: 50050
-    nodePort: 30050 # Public Mobile gRPC Stream entrypoint (grpc://<Cluster-IP>:30050)
+    nodePort: 30050
   type: NodePort
