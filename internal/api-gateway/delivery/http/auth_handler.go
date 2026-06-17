@@ -14,7 +14,11 @@ import (
 
 // StartHTTPServer accepts BOTH clients to multiplex proxy endpoints out cleanly
 func StartHTTPServer(cfg *config.Config, authClient authpb.AuthServiceClient, trackClient trackpb.TrackServiceClient) {
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
+
+	// security proxy warning right after initialization
+	r.SetTrustedProxies(nil)
 
 	// 🔑 Public Auth Delivery Group
 	publicAuth := r.Group("/api/v1/auth")

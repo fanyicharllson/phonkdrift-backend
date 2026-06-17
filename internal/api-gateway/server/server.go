@@ -5,7 +5,7 @@ import (
 	"net"
 
 	"github.com/fanyicharllson/phonkdrift-backend/internal/api-gateway/delivery/http"
-	"github.com/fanyicharllson/phonkdrift-backend/internal/config" 
+	"github.com/fanyicharllson/phonkdrift-backend/internal/config"
 	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
 	trackpb "github.com/fanyicharllson/phonkdrift-backend/pb/track"
 	"google.golang.org/grpc"
@@ -15,9 +15,9 @@ import (
 type GatewayServer struct {
 	authpb.UnimplementedAuthServiceServer
 	trackpb.UnimplementedTrackServiceServer
-	Cfg         *config.Config 
+	Cfg         *config.Config
 	AuthClient  authpb.AuthServiceClient
-	TrackClient trackpb.TrackServiceClient 
+	TrackClient trackpb.TrackServiceClient
 	trackProxy  *TrackProxy
 }
 
@@ -61,7 +61,9 @@ func (s *GatewayServer) StartMobileGRPCListener() {
 		log.Fatalf("Failed to listen for mobile gRPC on port %s: %v", s.Cfg.ApiGatewayGrpcPort, err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(s.authUnaryInterceptor()),
+	)
 
 	// Register both backend services on the multiplexed gateway port!
 	authpb.RegisterAuthServiceServer(grpcServer, s)

@@ -12,6 +12,7 @@ type User struct {
 	Email        string    `json:"email"`
 	PasswordHash string    `json:"-"`
 	AvatarURL    string    `json:"avatar_url"`
+	PhonkLevel   string    `json:"phonk_level"`
 	IsVerified   bool      `json:"is_verified"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
@@ -39,6 +40,7 @@ type AuthRepository interface {
 	MarkUserVerified(ctx context.Context, userID string) error
 	UpdateUserVerificationCode(ctx context.Context, email, vCode string, expiresAt time.Time) error
 	GetUserByID(ctx context.Context, userID string) (*User, error)
+	UpdateUserPhonkLevel(ctx context.Context, userID, phonkLevel string) (*User, error)
 	UpdatePassword(ctx context.Context, userID string, hashedPassword string) error
 }
 
@@ -56,6 +58,7 @@ type AuthUseCase interface {
 	ValidateToken(ctx context.Context, tokenString string) (string, string, error)
 	ResendCode(ctx context.Context, email string) error
 	GetUser(ctx context.Context, userID string) (*User, error)
+	UpdateProfile(ctx context.Context, userID, phonkLevel string) (*User, error)
 	ForgotPassword(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, email, code, newPassword string) error
 	VerifyResetCode(ctx context.Context, email, code string) (bool, error)

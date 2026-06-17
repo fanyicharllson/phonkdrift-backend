@@ -147,9 +147,16 @@ func (u *authUseCase) ValidateToken(ctx context.Context, tokenString string) (st
 	if !ok {
 		return "", "", errors.New("failed to parse session identity")
 	}
+	expiresAt, err := claims.GetExpirationTime()
+	if err != nil || expiresAt == nil || time.Now().After(expiresAt.Time) {
+		return "", "", errors.New("session expired or invalid token")
+	}
 
 	userID, _ := claims["user_id"].(string)
 	username, _ := claims["username"].(string)
+	if userID == "" {
+		return "", "", errors.New("failed to parse session identity")
+	}
 
 	return userID, username, nil
 }
@@ -181,6 +188,27 @@ func (u *authUseCase) GetUser(ctx context.Context, userID string) (*domain.User,
 	if err != nil || user == nil {
 		return nil, errors.New("user profile not found")
 	}
+	return user, nil
+}
+
+func (u *authUseCase) UpdateProfile(ctx context.Context, userID, phonkLevel string) (*domain.User, error) {
+	userID = strings.TrimSpace(userID)
+	phonkLevel = strings.ToUpper(strings.TrimSpace(phonkLevel))
+	if userID == "" {
+		return nil, errors.New("user_id is required")
+	}
+	if phonkLevel == "" {
+		return nil, errors.New("phonk_level is required")
+	}
+
+	user, err := u.repo.UpdateUserPhonkLevel(ctx, userID, phonkLevel)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update profile: %w", err)
+	}
+	if user == nil {
+		return nil, errors.New("user profile not found")
+	}
+
 	return user, nil
 }
 

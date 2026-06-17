@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"strings"
 
 	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
+	"google.golang.org/grpc/metadata"
 )
 
 // RegisterUser wraps and forwards the registration stream to the internal Auth microservice.
@@ -20,6 +22,11 @@ func (s *GatewayServer) VerifyCode(ctx context.Context, req *authpb.VerifyReques
 }
 
 func (s *GatewayServer) ValidateToken(ctx context.Context, req *authpb.ValidateTokenRequest) (*authpb.ValidateTokenResponse, error) {
+	if req.GetToken() == "" {
+		req = &authpb.ValidateTokenRequest{
+			Token: bearerTokenFromIncomingContext(ctx),
+		}
+	}
 	return s.AuthClient.ValidateToken(ctx, req)
 }
 
@@ -29,6 +36,10 @@ func (s *GatewayServer) ResendCode(ctx context.Context, req *authpb.ResendCodeRe
 
 func (s *GatewayServer) GetUser(ctx context.Context, req *authpb.GetUserRequest) (*authpb.GetUserResponse, error) {
 	return s.AuthClient.GetUser(ctx, req)
+}
+
+func (s *GatewayServer) UpdateProfile(ctx context.Context, req *authpb.UpdateProfileRequest) (*authpb.UpdateProfileResponse, error) {
+	return s.AuthClient.UpdateProfile(ctx, req)
 }
 
 func (s *GatewayServer) ForgotPassword(ctx context.Context, req *authpb.ForgotPasswordRequest) (*authpb.ForgotPasswordResponse, error) {
@@ -41,4 +52,20 @@ func (s *GatewayServer) VerifyResetCode(ctx context.Context, req *authpb.VerifyR
 
 func (s *GatewayServer) ResetPassword(ctx context.Context, req *authpb.ResetPasswordRequest) (*authpb.ResetPasswordResponse, error) {
 	return s.AuthClient.ResetPassword(ctx, req)
+}
+
+func bearerTokenFromIncomingContext(ctx context.Context) string {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ""
+	}
+
+	for _, value := range md.Get("authorization") {
+		parts := strings.Fields(strings.TrimSpace(value))
+		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+			return parts[1]
+		}
+	}
+
+	return ""
 }

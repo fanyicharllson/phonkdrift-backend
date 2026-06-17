@@ -16,6 +16,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, dollar_1 uuid.UUID) (User, error)
 	GetVerificationDetails(ctx context.Context, dollar_1 string) (GetVerificationDetailsRow, error)
 	UpdatePassword(ctx context.Context, arg UpdatePasswordParams) error
+	UpdateUserPhonkLevel(ctx context.Context, arg UpdateUserPhonkLevelParams) (User, error)
 	UpdateUserVerification(ctx context.Context, arg UpdateUserVerificationParams) (User, error)
 	UpdateUserVerificationCode(ctx context.Context, arg UpdateUserVerificationCodeParams) error
 }

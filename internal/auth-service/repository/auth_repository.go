@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"time"
 	"fmt"
+	"time"
 
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/domain"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/repository/db"
@@ -35,15 +35,15 @@ func (r *authRepository) CreateUser(ctx context.Context, username, email, passwo
 		return nil, err
 	}
 
-	return &domain.User{
-		ID:         sqlcUser.ID.String(),
+	return mapSQLCUser(db.User{
+		ID:         sqlcUser.ID,
 		Username:   sqlcUser.Username,
 		Email:      sqlcUser.Email,
-		AvatarURL:  sqlcUser.AvatarUrl.String,
-		IsVerified: sqlcUser.IsVerified.Bool,
-		CreatedAt:  sqlcUser.CreatedAt.Time,
-		UpdatedAt:  sqlcUser.UpdatedAt.Time,
-	}, nil
+		AvatarUrl:  sqlcUser.AvatarUrl,
+		IsVerified: sqlcUser.IsVerified,
+		CreatedAt:  sqlcUser.CreatedAt,
+		UpdatedAt:  sqlcUser.UpdatedAt,
+	}), nil
 }
 
 func (r *authRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
@@ -55,16 +55,7 @@ func (r *authRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 		return nil, err
 	}
 
-	return &domain.User{
-		ID:           sqlcUser.ID.String(),
-		Username:     sqlcUser.Username,
-		Email:        sqlcUser.Email,
-		PasswordHash: sqlcUser.PasswordHash,
-		AvatarURL:    sqlcUser.AvatarUrl.String,
-		IsVerified:   sqlcUser.IsVerified.Bool,
-		CreatedAt:    sqlcUser.CreatedAt.Time,
-		UpdatedAt:    sqlcUser.UpdatedAt.Time,
-	}, nil
+	return mapSQLCUser(sqlcUser), nil
 }
 
 func (r *authRepository) GetVerificationDetails(ctx context.Context, email string) (*domain.VerificationDetails, error) {
@@ -112,15 +103,7 @@ func (r *authRepository) GetUserByID(ctx context.Context, userID string) (*domai
 		return nil, err
 	}
 
-	return &domain.User{
-		ID:         user.ID.String(),
-		Username:   user.Username,
-		Email:      user.Email,
-		AvatarURL:  user.AvatarUrl.String,
-		IsVerified: user.IsVerified.Bool,
-		CreatedAt:  user.CreatedAt.Time,
-		UpdatedAt:  user.UpdatedAt.Time,
-	}, nil
+	return mapSQLCUser(user), nil
 }
 
 func (r *authRepository) UpdateUserVerificationCode(ctx context.Context, email, vCode string, expiresAt time.Time) error {
@@ -141,4 +124,38 @@ func (r *authRepository) UpdatePassword(ctx context.Context, userID string, hash
 		ID:           parsedUUID,
 		PasswordHash: hashedPassword,
 	})
+}
+
+func (r *authRepository) UpdateUserPhonkLevel(ctx context.Context, userID, phonkLevel string) (*domain.User, error) {
+	parsedUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user uuid structure: %w", err)
+	}
+
+	user, err := r.queries.UpdateUserPhonkLevel(ctx, db.UpdateUserPhonkLevelParams{
+		ID:         parsedUUID,
+		PhonkLevel: sql.NullString{String: phonkLevel, Valid: true},
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return mapSQLCUser(user), nil
+}
+
+func mapSQLCUser(user db.User) *domain.User {
+	return &domain.User{
+		ID:           user.ID.String(),
+		Username:     user.Username,
+		Email:        user.Email,
+		PasswordHash: user.PasswordHash,
+		AvatarURL:    user.AvatarUrl.String,
+		PhonkLevel:   user.PhonkLevel.String,
+		IsVerified:   user.IsVerified.Bool,
+		CreatedAt:    user.CreatedAt.Time,
+		UpdatedAt:    user.UpdatedAt.Time,
+	}
 }

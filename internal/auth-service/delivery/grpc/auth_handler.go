@@ -3,12 +3,14 @@ package grpc
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/domain"
 
 	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -74,14 +76,28 @@ func (h *AuthGRPCHandler) LoginUser(ctx context.Context, req *authpb.LoginReques
 }
 
 func (h *AuthGRPCHandler) ValidateToken(ctx context.Context, req *authpb.ValidateTokenRequest) (*authpb.ValidateTokenResponse, error) {
-	userID, username, err := h.useCase.ValidateToken(ctx, req.GetToken())
+	token := req.GetToken()
+	if token == "" {
+		token = bearerTokenFromContext(ctx)
+	}
+	if token == "" {
+		return nil, status.Error(codes.Unauthenticated, "authorization bearer token missing")
+	}
+
+	userID, username, err := h.useCase.ValidateToken(ctx, token)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
+	user, err := h.useCase.GetUser(ctx, userID)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
 	return &authpb.ValidateTokenResponse{
 		IsValid:  true,
 		UserId:   userID,
 		Username: username,
+		User:     userToProto(user),
 	}, nil
 }
 
@@ -108,12 +124,19 @@ func (h *AuthGRPCHandler) GetUser(ctx context.Context, req *authpb.GetUserReques
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	return &authpb.GetUserResponse{
-		User: &authpb.User{
-			UserId:    user.ID,
-			Username:  user.Username,
-			Email:     user.Email,
-			AvatarUrl: user.AvatarURL,
-		},
+		User: userToProto(user),
+	}, nil
+}
+
+func (h *AuthGRPCHandler) UpdateProfile(ctx context.Context, req *authpb.UpdateProfileRequest) (*authpb.UpdateProfileResponse, error) {
+	user, err := h.useCase.UpdateProfile(ctx, req.GetUserId(), req.GetPhonkLevel())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &authpb.UpdateProfileResponse{
+		Success: true,
+		User:    userToProto(user),
 	}, nil
 }
 
@@ -147,4 +170,34 @@ func (h *AuthGRPCHandler) VerifyResetCode(ctx context.Context, req *authpb.Verif
 	return &authpb.VerifyResetCodeResponse{
 		Success: success,
 	}, nil
+}
+
+func bearerTokenFromContext(ctx context.Context) string {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ""
+	}
+
+	for _, value := range md.Get("authorization") {
+		parts := strings.Fields(strings.TrimSpace(value))
+		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+			return parts[1]
+		}
+	}
+
+	return ""
+}
+
+func userToProto(user *domain.User) *authpb.User {
+	if user == nil {
+		return nil
+	}
+
+	return &authpb.User{
+		UserId:     user.ID,
+		Username:   user.Username,
+		Email:      user.Email,
+		AvatarUrl:  user.AvatarURL,
+		PhonkLevel: user.PhonkLevel,
+	}
 }

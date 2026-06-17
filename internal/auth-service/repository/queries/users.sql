@@ -14,6 +14,12 @@ WHERE email = $1::text LIMIT 1;
 SELECT * FROM users
 WHERE id = $1::uuid LIMIT 1;
 
+-- name: UpdateUserPhonkLevel :one
+UPDATE users
+SET phonk_level = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING *;
+
 -- name: GetVerificationDetails :one
 SELECT id, verification_code, code_expires_at, is_verified
 FROM users

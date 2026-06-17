@@ -8,7 +8,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi # Allocates 2 Gigabytes of disk space for your local fallback queue history
+      storage: 2Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -33,8 +33,27 @@ spec:
         - containerPort: 15672
         volumeMounts:
         - name: rabbitmq-storage
-          mountPath: /var/lib/rabbitmq # Safely links RabbitMQ's database path to your host disk
+          mountPath: /var/lib/rabbitmq
       volumes:
       - name: rabbitmq-storage
         persistentVolumeClaim:
           claimName: rabbitmq-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  namespace: default
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+  - name: amqp
+    protocol: TCP
+    port: 5672
+    targetPort: 5672
+  - name: management
+    protocol: TCP
+    port: 15672
+    targetPort: 15672
+  type: ClusterIP

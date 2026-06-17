@@ -62,7 +62,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, password_hash, avatar_url, is_verified, verification_code, code_expires_at, created_at, updated_at FROM users
+SELECT id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at FROM users
 WHERE email = $1::text LIMIT 1
 `
 
@@ -75,6 +75,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, dollar_1 string) (User, er
 		&i.Email,
 		&i.PasswordHash,
 		&i.AvatarUrl,
+		&i.PhonkLevel,
 		&i.IsVerified,
 		&i.VerificationCode,
 		&i.CodeExpiresAt,
@@ -85,7 +86,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, dollar_1 string) (User, er
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, password_hash, avatar_url, is_verified, verification_code, code_expires_at, created_at, updated_at FROM users
+SELECT id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at FROM users
 WHERE id = $1::uuid LIMIT 1
 `
 
@@ -98,6 +99,7 @@ func (q *Queries) GetUserByID(ctx context.Context, dollar_1 uuid.UUID) (User, er
 		&i.Email,
 		&i.PasswordHash,
 		&i.AvatarUrl,
+		&i.PhonkLevel,
 		&i.IsVerified,
 		&i.VerificationCode,
 		&i.CodeExpiresAt,
@@ -151,6 +153,37 @@ func (q *Queries) UpdatePassword(ctx context.Context, arg UpdatePasswordParams) 
 	return err
 }
 
+const updateUserPhonkLevel = `-- name: UpdateUserPhonkLevel :one
+UPDATE users
+SET phonk_level = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at
+`
+
+type UpdateUserPhonkLevelParams struct {
+	ID         uuid.UUID      `json:"id"`
+	PhonkLevel sql.NullString `json:"phonk_level"`
+}
+
+func (q *Queries) UpdateUserPhonkLevel(ctx context.Context, arg UpdateUserPhonkLevelParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserPhonkLevel, arg.ID, arg.PhonkLevel)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.AvatarUrl,
+		&i.PhonkLevel,
+		&i.IsVerified,
+		&i.VerificationCode,
+		&i.CodeExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateUserVerification = `-- name: UpdateUserVerification :one
 UPDATE users
 SET is_verified = $1::boolean, 
@@ -158,7 +191,7 @@ SET is_verified = $1::boolean,
     code_expires_at = NULL, 
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $2::uuid
-RETURNING id, username, email, password_hash, avatar_url, is_verified, verification_code, code_expires_at, created_at, updated_at
+RETURNING id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at
 `
 
 type UpdateUserVerificationParams struct {
@@ -175,6 +208,7 @@ func (q *Queries) UpdateUserVerification(ctx context.Context, arg UpdateUserVeri
 		&i.Email,
 		&i.PasswordHash,
 		&i.AvatarUrl,
+		&i.PhonkLevel,
 		&i.IsVerified,
 		&i.VerificationCode,
 		&i.CodeExpiresAt,
