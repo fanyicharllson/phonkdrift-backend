@@ -23,6 +23,12 @@ var publicMethods = map[string]struct{}{
 	// Current proto method names.
 	authpb.AuthService_LoginUser_FullMethodName:    {},
 	authpb.AuthService_RegisterUser_FullMethodName: {},
+
+	authpb.AuthService_VerifyCode_FullMethodName:      {},
+    authpb.AuthService_ResendCode_FullMethodName:      {},
+    authpb.AuthService_ForgotPassword_FullMethodName:  {},
+    authpb.AuthService_VerifyResetCode_FullMethodName: {},
+    authpb.AuthService_ResetPassword_FullMethodName:   {},
 }
 
 func (s *GatewayServer) authUnaryInterceptor() grpc.UnaryServerInterceptor {

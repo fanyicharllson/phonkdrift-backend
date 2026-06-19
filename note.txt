@@ -139,3 +139,5 @@ api gatway = localhost:50050
 local rabbitmq = http://localhost:15672/#/
 cloudpmaq = https://api.cloudamqp.com/console/71b81fac-1d48-47fb-9380-6686d6dbb4e7/details
 git rm -r --cached path/to/your/folder // untrack file already tracked
+
+167.71.34.119:30050
