@@ -18,7 +18,7 @@ const userIDContextKey contextKey = "user_id"
 var publicMethods = map[string]struct{}{
 	"/auth.AuthService/Login":          {},
 	"/auth.AuthService/Register":       {},
-	"/auth.AuthService/ForgotPassword": {},
+	// "/auth.AuthService/ForgotPassword": {},
 
 	// Current proto method names.
 	authpb.AuthService_LoginUser_FullMethodName:    {},
