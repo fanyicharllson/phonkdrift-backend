@@ -13,6 +13,22 @@ import (
 	"github.com/google/uuid"
 )
 
+const banUser = `-- name: BanUser :exec
+UPDATE users 
+SET is_banned = true, banned_at = NOW(), ban_reason = $2
+WHERE id = $1
+`
+
+type BanUserParams struct {
+	ID        uuid.UUID      `json:"id"`
+	BanReason sql.NullString `json:"ban_reason"`
+}
+
+func (q *Queries) BanUser(ctx context.Context, arg BanUserParams) error {
+	_, err := q.db.ExecContext(ctx, banUser, arg.ID, arg.BanReason)
+	return err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     username, email, password_hash, verification_code, code_expires_at
@@ -62,7 +78,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at FROM users
+SELECT id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at, is_banned, banned_at, ban_reason, fcm_token FROM users
 WHERE email = $1::text LIMIT 1
 `
 
@@ -81,12 +97,16 @@ func (q *Queries) GetUserByEmail(ctx context.Context, dollar_1 string) (User, er
 		&i.CodeExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsBanned,
+		&i.BannedAt,
+		&i.BanReason,
+		&i.FcmToken,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at FROM users
+SELECT id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at, is_banned, banned_at, ban_reason, fcm_token FROM users
 WHERE id = $1::uuid LIMIT 1
 `
 
@@ -105,8 +125,40 @@ func (q *Queries) GetUserByID(ctx context.Context, dollar_1 uuid.UUID) (User, er
 		&i.CodeExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsBanned,
+		&i.BannedAt,
+		&i.BanReason,
+		&i.FcmToken,
 	)
 	return i, err
+}
+
+const getUserFCMTokens = `-- name: GetUserFCMTokens :many
+SELECT fcm_token FROM users 
+WHERE is_banned = false AND fcm_token IS NOT NULL AND fcm_token != ''
+`
+
+func (q *Queries) GetUserFCMTokens(ctx context.Context) ([]sql.NullString, error) {
+	rows, err := q.db.QueryContext(ctx, getUserFCMTokens)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []sql.NullString
+	for rows.Next() {
+		var fcm_token sql.NullString
+		if err := rows.Scan(&fcm_token); err != nil {
+			return nil, err
+		}
+		items = append(items, fcm_token)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getVerificationDetails = `-- name: GetVerificationDetails :one
@@ -134,6 +186,31 @@ func (q *Queries) GetVerificationDetails(ctx context.Context, dollar_1 string) (
 	return i, err
 }
 
+const unbanUser = `-- name: UnbanUser :exec
+UPDATE users 
+SET is_banned = false, banned_at = NULL, ban_reason = NULL
+WHERE id = $1
+`
+
+func (q *Queries) UnbanUser(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, unbanUser, id)
+	return err
+}
+
+const updateFCMToken = `-- name: UpdateFCMToken :exec
+UPDATE users SET fcm_token = $2 WHERE id = $1
+`
+
+type UpdateFCMTokenParams struct {
+	ID       uuid.UUID      `json:"id"`
+	FcmToken sql.NullString `json:"fcm_token"`
+}
+
+func (q *Queries) UpdateFCMToken(ctx context.Context, arg UpdateFCMTokenParams) error {
+	_, err := q.db.ExecContext(ctx, updateFCMToken, arg.ID, arg.FcmToken)
+	return err
+}
+
 const updatePassword = `-- name: UpdatePassword :exec
 UPDATE users
 SET password_hash = $1::text,
@@ -157,7 +234,7 @@ const updateUserPhonkLevel = `-- name: UpdateUserPhonkLevel :one
 UPDATE users
 SET phonk_level = $2, updated_at = NOW()
 WHERE id = $1
-RETURNING id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at
+RETURNING id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at, is_banned, banned_at, ban_reason, fcm_token
 `
 
 type UpdateUserPhonkLevelParams struct {
@@ -180,6 +257,10 @@ func (q *Queries) UpdateUserPhonkLevel(ctx context.Context, arg UpdateUserPhonkL
 		&i.CodeExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsBanned,
+		&i.BannedAt,
+		&i.BanReason,
+		&i.FcmToken,
 	)
 	return i, err
 }
@@ -191,7 +272,7 @@ SET is_verified = $1::boolean,
     code_expires_at = NULL, 
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $2::uuid
-RETURNING id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at
+RETURNING id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at, is_banned, banned_at, ban_reason, fcm_token
 `
 
 type UpdateUserVerificationParams struct {
@@ -214,6 +295,10 @@ func (q *Queries) UpdateUserVerification(ctx context.Context, arg UpdateUserVeri
 		&i.CodeExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsBanned,
+		&i.BannedAt,
+		&i.BanReason,
+		&i.FcmToken,
 	)
 	return i, err
 }

@@ -1,0 +1,12 @@
+ALTER TABLE tracks DROP COLUMN IF EXISTS storage_url;
+ALTER TABLE tracks DROP COLUMN IF EXISTS genre;
+ALTER TABLE tracks DROP COLUMN IF EXISTS is_featured;
+ALTER TABLE tracks DROP COLUMN IF EXISTS is_approved;
+ALTER TABLE tracks DROP COLUMN IF EXISTS is_rejected;
+ALTER TABLE tracks DROP COLUMN IF EXISTS source;
+ALTER TABLE tracks DROP COLUMN IF EXISTS yt_view_count;
+ALTER TABLE tracks DROP COLUMN IF EXISTS fcm_notified;
+
+DROP INDEX IF EXISTS idx_tracks_title_fts;
+DROP INDEX IF EXISTS idx_tracks_genre;
+DROP INDEX IF EXISTS idx_tracks_approval;

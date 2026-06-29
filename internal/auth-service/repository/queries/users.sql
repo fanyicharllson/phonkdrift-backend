@@ -48,3 +48,20 @@ SET password_hash = @password_hash::text,
     code_expires_at = NULL,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = @id::uuid;
+
+-- name: BanUser :exec
+UPDATE users 
+SET is_banned = true, banned_at = NOW(), ban_reason = $2
+WHERE id = $1;
+
+-- name: UnbanUser :exec
+UPDATE users 
+SET is_banned = false, banned_at = NULL, ban_reason = NULL
+WHERE id = $1;
+
+-- name: UpdateFCMToken :exec
+UPDATE users SET fcm_token = $2 WHERE id = $1;
+
+-- name: GetUserFCMTokens :many
+SELECT fcm_token FROM users 
+WHERE is_banned = false AND fcm_token IS NOT NULL AND fcm_token != '';

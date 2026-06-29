@@ -14,3 +14,6 @@ data:
   CHAT_SERVICE_ADDR: "chat-service:50053"
   REDIS_ADDR: "redis-service:6379"
   RABBITMQ_FALLBACK_URL: "amqp://guest:guest@rabbitmq-service:5672/"
+  DO_SPACES_BUCKET: "phonkdrift-storage"
+  DO_SPACES_ENDPOINT: "https://fra1.digitaloceanspaces.com"
+  DO_SPACES_CDN_URL: "https://phonkdrift-storage.fra1.cdn.digitaloceanspaces.com"

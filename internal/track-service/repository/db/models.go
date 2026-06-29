@@ -36,16 +36,24 @@ type PlaylistTrack struct {
 }
 
 type Track struct {
-	ID           string    `json:"id"`
-	Title        string    `json:"title"`
-	ArtistID     string    `json:"artist_id"`
-	ArtistName   string    `json:"artist_name"`
-	Duration     string    `json:"duration"`
-	ThumbnailUrl string    `json:"thumbnail_url"`
-	YoutubeID    string    `json:"youtube_id"`
-	PlayCount    int32     `json:"play_count"`
-	LikesCount   int32     `json:"likes_count"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID           string         `json:"id"`
+	Title        string         `json:"title"`
+	ArtistID     string         `json:"artist_id"`
+	ArtistName   string         `json:"artist_name"`
+	Duration     string         `json:"duration"`
+	ThumbnailUrl string         `json:"thumbnail_url"`
+	YoutubeID    string         `json:"youtube_id"`
+	PlayCount    int32          `json:"play_count"`
+	LikesCount   int32          `json:"likes_count"`
+	CreatedAt    time.Time      `json:"created_at"`
+	StorageUrl   sql.NullString `json:"storage_url"`
+	Genre        sql.NullString `json:"genre"`
+	IsFeatured   bool           `json:"is_featured"`
+	IsApproved   bool           `json:"is_approved"`
+	IsRejected   bool           `json:"is_rejected"`
+	Source       string         `json:"source"`
+	YtViewCount  sql.NullInt64  `json:"yt_view_count"`
+	FcmNotified  bool           `json:"fcm_notified"`
 }
 
 type TrackInteraction struct {

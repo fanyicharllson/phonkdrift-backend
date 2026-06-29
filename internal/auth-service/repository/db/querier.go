@@ -6,15 +6,20 @@ package db
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
 
 type Querier interface {
+	BanUser(ctx context.Context, arg BanUserParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	GetUserByEmail(ctx context.Context, dollar_1 string) (User, error)
 	GetUserByID(ctx context.Context, dollar_1 uuid.UUID) (User, error)
+	GetUserFCMTokens(ctx context.Context) ([]sql.NullString, error)
 	GetVerificationDetails(ctx context.Context, dollar_1 string) (GetVerificationDetailsRow, error)
+	UnbanUser(ctx context.Context, id uuid.UUID) error
+	UpdateFCMToken(ctx context.Context, arg UpdateFCMTokenParams) error
 	UpdatePassword(ctx context.Context, arg UpdatePasswordParams) error
 	UpdateUserPhonkLevel(ctx context.Context, arg UpdateUserPhonkLevelParams) (User, error)
 	UpdateUserVerification(ctx context.Context, arg UpdateUserVerificationParams) (User, error)

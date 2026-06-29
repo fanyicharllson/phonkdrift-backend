@@ -22,4 +22,8 @@ type User struct {
 	CodeExpiresAt    sql.NullTime   `json:"code_expires_at"`
 	CreatedAt        sql.NullTime   `json:"created_at"`
 	UpdatedAt        sql.NullTime   `json:"updated_at"`
+	IsBanned         bool           `json:"is_banned"`
+	BannedAt         sql.NullTime   `json:"banned_at"`
+	BanReason        sql.NullString `json:"ban_reason"`
+	FcmToken         sql.NullString `json:"fcm_token"`
 }

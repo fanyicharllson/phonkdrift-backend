@@ -9,12 +9,23 @@ import (
 )
 
 type Querier interface {
+	ApproveTrack(ctx context.Context, id string) error
+	DeleteTrack(ctx context.Context, id string) error
 	DeleteTrackInteraction(ctx context.Context, arg DeleteTrackInteractionParams) error
+	GetAllTracksAdmin(ctx context.Context, arg GetAllTracksAdminParams) ([]Track, error)
+	GetApprovedUnnotifiedTracks(ctx context.Context) ([]Track, error)
+	GetForYouTracks(ctx context.Context, limit int32) ([]Track, error)
 	GetRecentlyPlayed(ctx context.Context, arg GetRecentlyPlayedParams) ([]GetRecentlyPlayedRow, error)
 	GetTrack(ctx context.Context, id string) (Track, error)
+	GetTrackByYoutubeID(ctx context.Context, youtubeID string) (Track, error)
 	GetTrendingTracks(ctx context.Context, limit int32) ([]Track, error)
+	InsertTrack(ctx context.Context, arg InsertTrackParams) (Track, error)
+	MarkTrackFCMNotified(ctx context.Context, id string) error
+	RejectTrack(ctx context.Context, id string) error
+	SearchTracks(ctx context.Context, arg SearchTracksParams) ([]Track, error)
 	SetTrackInteraction(ctx context.Context, arg SetTrackInteractionParams) error
 	SyncPlaybackTelemetry(ctx context.Context, arg SyncPlaybackTelemetryParams) error
+	ToggleFeatureTrack(ctx context.Context, arg ToggleFeatureTrackParams) error
 	UpdateTrackStats(ctx context.Context, arg UpdateTrackStatsParams) error
 }
 

@@ -7,10 +7,29 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+const approveTrack = `-- name: ApproveTrack :exec
+UPDATE tracks SET is_approved = true, is_rejected = false WHERE id = $1
+`
+
+func (q *Queries) ApproveTrack(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, approveTrack, id)
+	return err
+}
+
+const deleteTrack = `-- name: DeleteTrack :exec
+DELETE FROM tracks WHERE id = $1
+`
+
+func (q *Queries) DeleteTrack(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteTrack, id)
+	return err
+}
 
 const deleteTrackInteraction = `-- name: DeleteTrackInteraction :exec
 DELETE FROM track_interactions 
@@ -27,8 +46,156 @@ func (q *Queries) DeleteTrackInteraction(ctx context.Context, arg DeleteTrackInt
 	return err
 }
 
+const getAllTracksAdmin = `-- name: GetAllTracksAdmin :many
+SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at, storage_url, genre, is_featured, is_approved, is_rejected, source, yt_view_count, fcm_notified FROM tracks ORDER BY created_at DESC LIMIT $1 OFFSET $2
+`
+
+type GetAllTracksAdminParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) GetAllTracksAdmin(ctx context.Context, arg GetAllTracksAdminParams) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, getAllTracksAdmin, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Track
+	for rows.Next() {
+		var i Track
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.ArtistID,
+			&i.ArtistName,
+			&i.Duration,
+			&i.ThumbnailUrl,
+			&i.YoutubeID,
+			&i.PlayCount,
+			&i.LikesCount,
+			&i.CreatedAt,
+			&i.StorageUrl,
+			&i.Genre,
+			&i.IsFeatured,
+			&i.IsApproved,
+			&i.IsRejected,
+			&i.Source,
+			&i.YtViewCount,
+			&i.FcmNotified,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getApprovedUnnotifiedTracks = `-- name: GetApprovedUnnotifiedTracks :many
+SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at, storage_url, genre, is_featured, is_approved, is_rejected, source, yt_view_count, fcm_notified FROM tracks 
+WHERE is_approved = true AND fcm_notified = false
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetApprovedUnnotifiedTracks(ctx context.Context) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, getApprovedUnnotifiedTracks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Track
+	for rows.Next() {
+		var i Track
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.ArtistID,
+			&i.ArtistName,
+			&i.Duration,
+			&i.ThumbnailUrl,
+			&i.YoutubeID,
+			&i.PlayCount,
+			&i.LikesCount,
+			&i.CreatedAt,
+			&i.StorageUrl,
+			&i.Genre,
+			&i.IsFeatured,
+			&i.IsApproved,
+			&i.IsRejected,
+			&i.Source,
+			&i.YtViewCount,
+			&i.FcmNotified,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getForYouTracks = `-- name: GetForYouTracks :many
+SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at, storage_url, genre, is_featured, is_approved, is_rejected, source, yt_view_count, fcm_notified FROM tracks
+WHERE is_approved = true AND is_rejected = false AND storage_url IS NOT NULL
+ORDER BY RANDOM()
+LIMIT $1
+`
+
+func (q *Queries) GetForYouTracks(ctx context.Context, limit int32) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, getForYouTracks, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Track
+	for rows.Next() {
+		var i Track
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.ArtistID,
+			&i.ArtistName,
+			&i.Duration,
+			&i.ThumbnailUrl,
+			&i.YoutubeID,
+			&i.PlayCount,
+			&i.LikesCount,
+			&i.CreatedAt,
+			&i.StorageUrl,
+			&i.Genre,
+			&i.IsFeatured,
+			&i.IsApproved,
+			&i.IsRejected,
+			&i.Source,
+			&i.YtViewCount,
+			&i.FcmNotified,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRecentlyPlayed = `-- name: GetRecentlyPlayed :many
-SELECT t.id, t.title, t.artist_id, t.artist_name, t.duration, t.thumbnail_url, t.youtube_id, t.play_count, t.likes_count, t.created_at, lh.last_position_sec, lh.updated_at
+SELECT t.id, t.title, t.artist_id, t.artist_name, t.duration, t.thumbnail_url, t.youtube_id, t.play_count, t.likes_count, t.created_at, t.storage_url, t.genre, t.is_featured, t.is_approved, t.is_rejected, t.source, t.yt_view_count, t.fcm_notified, lh.last_position_sec, lh.updated_at
 FROM listening_history lh
 JOIN tracks t ON lh.track_id = t.id
 WHERE lh.user_id = $1
@@ -42,18 +209,26 @@ type GetRecentlyPlayedParams struct {
 }
 
 type GetRecentlyPlayedRow struct {
-	ID              string    `json:"id"`
-	Title           string    `json:"title"`
-	ArtistID        string    `json:"artist_id"`
-	ArtistName      string    `json:"artist_name"`
-	Duration        string    `json:"duration"`
-	ThumbnailUrl    string    `json:"thumbnail_url"`
-	YoutubeID       string    `json:"youtube_id"`
-	PlayCount       int32     `json:"play_count"`
-	LikesCount      int32     `json:"likes_count"`
-	CreatedAt       time.Time `json:"created_at"`
-	LastPositionSec int32     `json:"last_position_sec"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID              string         `json:"id"`
+	Title           string         `json:"title"`
+	ArtistID        string         `json:"artist_id"`
+	ArtistName      string         `json:"artist_name"`
+	Duration        string         `json:"duration"`
+	ThumbnailUrl    string         `json:"thumbnail_url"`
+	YoutubeID       string         `json:"youtube_id"`
+	PlayCount       int32          `json:"play_count"`
+	LikesCount      int32          `json:"likes_count"`
+	CreatedAt       time.Time      `json:"created_at"`
+	StorageUrl      sql.NullString `json:"storage_url"`
+	Genre           sql.NullString `json:"genre"`
+	IsFeatured      bool           `json:"is_featured"`
+	IsApproved      bool           `json:"is_approved"`
+	IsRejected      bool           `json:"is_rejected"`
+	Source          string         `json:"source"`
+	YtViewCount     sql.NullInt64  `json:"yt_view_count"`
+	FcmNotified     bool           `json:"fcm_notified"`
+	LastPositionSec int32          `json:"last_position_sec"`
+	UpdatedAt       time.Time      `json:"updated_at"`
 }
 
 func (q *Queries) GetRecentlyPlayed(ctx context.Context, arg GetRecentlyPlayedParams) ([]GetRecentlyPlayedRow, error) {
@@ -76,6 +251,14 @@ func (q *Queries) GetRecentlyPlayed(ctx context.Context, arg GetRecentlyPlayedPa
 			&i.PlayCount,
 			&i.LikesCount,
 			&i.CreatedAt,
+			&i.StorageUrl,
+			&i.Genre,
+			&i.IsFeatured,
+			&i.IsApproved,
+			&i.IsRejected,
+			&i.Source,
+			&i.YtViewCount,
+			&i.FcmNotified,
 			&i.LastPositionSec,
 			&i.UpdatedAt,
 		); err != nil {
@@ -93,7 +276,7 @@ func (q *Queries) GetRecentlyPlayed(ctx context.Context, arg GetRecentlyPlayedPa
 }
 
 const getTrack = `-- name: GetTrack :one
-SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at FROM tracks WHERE id = $1 LIMIT 1
+SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at, storage_url, genre, is_featured, is_approved, is_rejected, source, yt_view_count, fcm_notified FROM tracks WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetTrack(ctx context.Context, id string) (Track, error) {
@@ -110,12 +293,50 @@ func (q *Queries) GetTrack(ctx context.Context, id string) (Track, error) {
 		&i.PlayCount,
 		&i.LikesCount,
 		&i.CreatedAt,
+		&i.StorageUrl,
+		&i.Genre,
+		&i.IsFeatured,
+		&i.IsApproved,
+		&i.IsRejected,
+		&i.Source,
+		&i.YtViewCount,
+		&i.FcmNotified,
+	)
+	return i, err
+}
+
+const getTrackByYoutubeID = `-- name: GetTrackByYoutubeID :one
+SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at, storage_url, genre, is_featured, is_approved, is_rejected, source, yt_view_count, fcm_notified FROM tracks WHERE youtube_id = $1 LIMIT 1
+`
+
+func (q *Queries) GetTrackByYoutubeID(ctx context.Context, youtubeID string) (Track, error) {
+	row := q.db.QueryRowContext(ctx, getTrackByYoutubeID, youtubeID)
+	var i Track
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.ArtistID,
+		&i.ArtistName,
+		&i.Duration,
+		&i.ThumbnailUrl,
+		&i.YoutubeID,
+		&i.PlayCount,
+		&i.LikesCount,
+		&i.CreatedAt,
+		&i.StorageUrl,
+		&i.Genre,
+		&i.IsFeatured,
+		&i.IsApproved,
+		&i.IsRejected,
+		&i.Source,
+		&i.YtViewCount,
+		&i.FcmNotified,
 	)
 	return i, err
 }
 
 const getTrendingTracks = `-- name: GetTrendingTracks :many
-SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at FROM tracks
+SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at, storage_url, genre, is_featured, is_approved, is_rejected, source, yt_view_count, fcm_notified FROM tracks
 ORDER BY play_count DESC, likes_count DESC
 LIMIT $1
 `
@@ -140,6 +361,153 @@ func (q *Queries) GetTrendingTracks(ctx context.Context, limit int32) ([]Track, 
 			&i.PlayCount,
 			&i.LikesCount,
 			&i.CreatedAt,
+			&i.StorageUrl,
+			&i.Genre,
+			&i.IsFeatured,
+			&i.IsApproved,
+			&i.IsRejected,
+			&i.Source,
+			&i.YtViewCount,
+			&i.FcmNotified,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const insertTrack = `-- name: InsertTrack :one
+INSERT INTO tracks (
+  id, title, artist_id, artist_name, duration,
+  thumbnail_url, youtube_id, storage_url, genre,
+  source, is_approved, yt_view_count
+) VALUES (
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+) RETURNING id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at, storage_url, genre, is_featured, is_approved, is_rejected, source, yt_view_count, fcm_notified
+`
+
+type InsertTrackParams struct {
+	ID           string         `json:"id"`
+	Title        string         `json:"title"`
+	ArtistID     string         `json:"artist_id"`
+	ArtistName   string         `json:"artist_name"`
+	Duration     string         `json:"duration"`
+	ThumbnailUrl string         `json:"thumbnail_url"`
+	YoutubeID    string         `json:"youtube_id"`
+	StorageUrl   sql.NullString `json:"storage_url"`
+	Genre        sql.NullString `json:"genre"`
+	Source       string         `json:"source"`
+	IsApproved   bool           `json:"is_approved"`
+	YtViewCount  sql.NullInt64  `json:"yt_view_count"`
+}
+
+func (q *Queries) InsertTrack(ctx context.Context, arg InsertTrackParams) (Track, error) {
+	row := q.db.QueryRowContext(ctx, insertTrack,
+		arg.ID,
+		arg.Title,
+		arg.ArtistID,
+		arg.ArtistName,
+		arg.Duration,
+		arg.ThumbnailUrl,
+		arg.YoutubeID,
+		arg.StorageUrl,
+		arg.Genre,
+		arg.Source,
+		arg.IsApproved,
+		arg.YtViewCount,
+	)
+	var i Track
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.ArtistID,
+		&i.ArtistName,
+		&i.Duration,
+		&i.ThumbnailUrl,
+		&i.YoutubeID,
+		&i.PlayCount,
+		&i.LikesCount,
+		&i.CreatedAt,
+		&i.StorageUrl,
+		&i.Genre,
+		&i.IsFeatured,
+		&i.IsApproved,
+		&i.IsRejected,
+		&i.Source,
+		&i.YtViewCount,
+		&i.FcmNotified,
+	)
+	return i, err
+}
+
+const markTrackFCMNotified = `-- name: MarkTrackFCMNotified :exec
+UPDATE tracks SET fcm_notified = true WHERE id = $1
+`
+
+func (q *Queries) MarkTrackFCMNotified(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, markTrackFCMNotified, id)
+	return err
+}
+
+const rejectTrack = `-- name: RejectTrack :exec
+UPDATE tracks SET is_rejected = true, is_approved = false WHERE id = $1
+`
+
+func (q *Queries) RejectTrack(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, rejectTrack, id)
+	return err
+}
+
+const searchTracks = `-- name: SearchTracks :many
+SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at, storage_url, genre, is_featured, is_approved, is_rejected, source, yt_view_count, fcm_notified FROM tracks
+WHERE is_approved = true 
+  AND is_rejected = false
+  AND storage_url IS NOT NULL
+  AND to_tsvector('english', title || ' ' || artist_name) @@ plainto_tsquery('english', $1)
+ORDER BY play_count DESC
+LIMIT 20 OFFSET ($2 * 20)
+`
+
+type SearchTracksParams struct {
+	PlaintoTsquery string      `json:"plainto_tsquery"`
+	Column2        interface{} `json:"column_2"`
+}
+
+func (q *Queries) SearchTracks(ctx context.Context, arg SearchTracksParams) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, searchTracks, arg.PlaintoTsquery, arg.Column2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Track
+	for rows.Next() {
+		var i Track
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.ArtistID,
+			&i.ArtistName,
+			&i.Duration,
+			&i.ThumbnailUrl,
+			&i.YoutubeID,
+			&i.PlayCount,
+			&i.LikesCount,
+			&i.CreatedAt,
+			&i.StorageUrl,
+			&i.Genre,
+			&i.IsFeatured,
+			&i.IsApproved,
+			&i.IsRejected,
+			&i.Source,
+			&i.YtViewCount,
+			&i.FcmNotified,
 		); err != nil {
 			return nil, err
 		}
@@ -193,6 +561,20 @@ func (q *Queries) SyncPlaybackTelemetry(ctx context.Context, arg SyncPlaybackTel
 		arg.LastPositionSec,
 		arg.IsCompleted,
 	)
+	return err
+}
+
+const toggleFeatureTrack = `-- name: ToggleFeatureTrack :exec
+UPDATE tracks SET is_featured = $2 WHERE id = $1
+`
+
+type ToggleFeatureTrackParams struct {
+	ID         string `json:"id"`
+	IsFeatured bool   `json:"is_featured"`
+}
+
+func (q *Queries) ToggleFeatureTrack(ctx context.Context, arg ToggleFeatureTrackParams) error {
+	_, err := q.db.ExecContext(ctx, toggleFeatureTrack, arg.ID, arg.IsFeatured)
 	return err
 }
 

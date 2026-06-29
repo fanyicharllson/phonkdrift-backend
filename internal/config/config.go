@@ -31,6 +31,22 @@ type Config struct {
 	RabbitMQFallbackURL string `mapstructure:"RABBITMQ_FALLBACK_URL"`
 	ResendAPIKey        string `mapstructure:"RESEND_API_KEY"`
 	JWTSecret           string `mapstructure:"JWT_SECRET"`
+
+	// DigitalOcean Spaces
+	DOSpacesKey      string `mapstructure:"DO_SPACES_KEY"`
+	DOSpacesSecret   string `mapstructure:"DO_SPACES_SECRET"`
+	DOSpacesBucket   string `mapstructure:"DO_SPACES_BUCKET"`
+	DOSpacesEndpoint string `mapstructure:"DO_SPACES_ENDPOINT"`
+	DOSpacesCDNURL   string `mapstructure:"DO_SPACES_CDN_URL"`
+
+	// YouTube Discovery
+	YouTubeAPIKey string `mapstructure:"YOUTUBE_API_KEY"`
+
+	// FCM Push Notifications
+	FCMServiceAccountJSON string `mapstructure:"FCM_SERVICE_ACCOUNT_JSON"`
+
+	// Admin
+	AdminJWTSecret string `mapstructure:"ADMIN_JWT_SECRET"`
 }
 
 func LoadConfig() (config Config, err error) {
@@ -49,6 +65,9 @@ func LoadConfig() (config Config, err error) {
 		"REDIS_ADDR",
 		"RABBITMQ_URL", "RABBITMQ_FALLBACK_URL",
 		"RESEND_API_KEY", "JWT_SECRET",
+		"DO_SPACES_KEY", "DO_SPACES_SECRET", "DO_SPACES_BUCKET",
+		"DO_SPACES_ENDPOINT", "DO_SPACES_CDN_URL",
+		"YOUTUBE_API_KEY", "FCM_SERVICE_ACCOUNT_JSON", "ADMIN_JWT_SECRET",
 	}
 	for _, key := range envKeys {
 		if err := viper.BindEnv(key); err != nil {
