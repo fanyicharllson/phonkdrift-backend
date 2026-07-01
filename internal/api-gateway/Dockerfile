@@ -9,6 +9,17 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o api-gateway ./cmd/api-gateway/main.go
 # Stage 2: Final lightweight runtime environment
 FROM alpine:3.19
 WORKDIR /app
+
+# yt-dlp needed for manual track seeding from admin dashboard
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    ffmpeg \
+    curl \
+    ca-certificates
+
+RUN pip3 install --break-system-packages yt-dlp
+
 COPY --from=builder /app/api-gateway .
 
 # Expose ports for both mobile gRPC traffic and HTTP Postman testing

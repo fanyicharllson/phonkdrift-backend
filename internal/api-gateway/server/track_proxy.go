@@ -60,3 +60,35 @@ func (s *GatewayServer) CreatePlaylist(ctx context.Context, req *trackpb.CreateP
 func (s *GatewayServer) AddToPlaylist(ctx context.Context, req *trackpb.PlaylistTrackRequest) (*trackpb.PlaylistActionResponse, error) {
 	return s.trackProxy.client.AddToPlaylist(ctx, req)
 }
+
+func (s *GatewayServer) GetForYou(ctx context.Context, req *trackpb.ForYouRequest) (*trackpb.ForYouResponse, error) {
+	return s.trackProxy.client.GetForYou(ctx, req)
+}
+
+func (s *GatewayServer) SeedTrack(ctx context.Context, req *trackpb.SeedTrackRequest) (*trackpb.SeedTrackResponse, error) {
+	return s.trackProxy.client.SeedTrack(ctx, req)
+}
+
+func (s *GatewayServer) ListTracksAdmin(ctx context.Context, req *trackpb.ListTracksAdminRequest) (*trackpb.ListTracksAdminResponse, error) {
+	return s.trackProxy.client.ListTracksAdmin(ctx, req)
+}
+
+func (s *GatewayServer) ApproveTrack(ctx context.Context, req *trackpb.TrackActionRequest) (*trackpb.TrackActionResponse, error) {
+	return s.trackProxy.client.ApproveTrack(ctx, req)
+}
+
+func (s *GatewayServer) RejectTrack(ctx context.Context, req *trackpb.TrackActionRequest) (*trackpb.TrackActionResponse, error) {
+	return s.trackProxy.client.RejectTrack(ctx, req)
+}
+
+func (s *GatewayServer) FeatureTrack(ctx context.Context, req *trackpb.FeatureTrackRequest) (*trackpb.TrackActionResponse, error) {
+	return s.trackProxy.client.FeatureTrack(ctx, req)
+}
+
+func (s *GatewayServer) DeleteTrack(ctx context.Context, req *trackpb.TrackActionRequest) (*trackpb.TrackActionResponse, error) {
+	return s.trackProxy.client.DeleteTrack(ctx, req)
+}
+
+func (s *GatewayServer) GetAdminStats(ctx context.Context, req *trackpb.Empty) (*trackpb.AdminStatsResponse, error) {
+	return s.trackProxy.client.GetAdminStats(ctx, req)
+}

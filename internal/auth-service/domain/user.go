@@ -14,8 +14,11 @@ type User struct {
 	AvatarURL    string    `json:"avatar_url"`
 	PhonkLevel   string    `json:"phonk_level"`
 	IsVerified   bool      `json:"is_verified"`
+	IsBanned     bool      `json:"is_banned"`
+	FCMToken     string    `json:"fcm_token"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
+    BanReason string `json:"ban_reason"`
 }
 
 // RegisterReq defines the explicit parameters required to invoke registration
@@ -42,6 +45,11 @@ type AuthRepository interface {
 	GetUserByID(ctx context.Context, userID string) (*User, error)
 	UpdateUserPhonkLevel(ctx context.Context, userID, phonkLevel string) (*User, error)
 	UpdatePassword(ctx context.Context, userID string, hashedPassword string) error
+	BanUser(ctx context.Context, userID string, reason string) error
+	UnbanUser(ctx context.Context, userID string) error
+	UpdateFCMToken(ctx context.Context, userID string, fcmToken string) error
+	GetAllFCMTokens(ctx context.Context) ([]string, error)
+
 }
 
 // EventEventPublisher defines the expectations for queuing async tasks (Hexagonal Output Port)
@@ -62,4 +70,9 @@ type AuthUseCase interface {
 	ForgotPassword(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, email, code, newPassword string) error
 	VerifyResetCode(ctx context.Context, email, code string) (bool, error)
+	BanUser(ctx context.Context, userID string, reason string) error
+	UnbanUser(ctx context.Context, userID string) error
+	UpdateFCMToken(ctx context.Context, userID string, fcmToken string) error
+	GetUserStatus(ctx context.Context, userID string) (*User, error)
+	SendPushNotification(ctx context.Context, title, body, targetUserID, dataType, dataID string) (int, error)
 }

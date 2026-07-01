@@ -69,3 +69,23 @@ func bearerTokenFromIncomingContext(ctx context.Context) string {
 
 	return ""
 }
+
+func (s *GatewayServer) BanUser(ctx context.Context, req *authpb.BanUserRequest) (*authpb.BanUserResponse, error) {
+	return s.AuthClient.BanUser(ctx, req)
+}
+
+func (s *GatewayServer) UnbanUser(ctx context.Context, req *authpb.UnbanUserRequest) (*authpb.UnbanUserResponse, error) {
+	return s.AuthClient.UnbanUser(ctx, req)
+}
+
+func (s *GatewayServer) SendPushNotification(ctx context.Context, req *authpb.PushNotificationRequest) (*authpb.PushNotificationResponse, error) {
+	return s.AuthClient.SendPushNotification(ctx, req)
+}
+
+func (s *GatewayServer) UpdateFCMToken(ctx context.Context, req *authpb.UpdateFCMTokenRequest) (*authpb.UpdateFCMTokenResponse, error) {
+	return s.AuthClient.UpdateFCMToken(ctx, req)
+}
+
+func (s *GatewayServer) GetUserStatus(ctx context.Context, req *authpb.GetUserStatusRequest) (*authpb.GetUserStatusResponse, error) {
+	return s.AuthClient.GetUserStatus(ctx, req)
+}

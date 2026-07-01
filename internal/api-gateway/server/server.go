@@ -1,13 +1,18 @@
 package server
 
 import (
+	"database/sql"
 	"log"
 	"net"
+	"time"
 
 	"github.com/fanyicharllson/phonkdrift-backend/internal/api-gateway/delivery/http"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/config"
+	discovery "github.com/fanyicharllson/phonkdrift-backend/internal/discovery-service"
+	trackdb "github.com/fanyicharllson/phonkdrift-backend/internal/track-service/repository/db"
 	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
 	trackpb "github.com/fanyicharllson/phonkdrift-backend/pb/track"
+	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -46,8 +51,40 @@ func Run(cfg *config.Config) error {
 		trackProxy:  trackProxy,
 	}
 
+	// Connect to S3/DO Spaces for manual track seeding
+	var uploader *discovery.Uploader
+	if cfg.DOSpacesKey != "" {
+		uploader, err = discovery.NewUploader(
+			cfg.DOSpacesKey,
+			cfg.DOSpacesSecret,
+			cfg.DOSpacesEndpoint,
+			cfg.DOSpacesBucket,
+			cfg.DOSpacesCDNURL,
+		)
+		if err != nil {
+			log.Printf("Warning: Failed to initialize S3 uploader in Gateway: %v", err)
+		}
+	}
+
+	// Optionally connect to Track DB for manual discovery trigger
+	var scheduler *discovery.Scheduler
+	if cfg.TrackDbSource != "" && uploader != nil {
+		dbConn, err := sql.Open("postgres", cfg.TrackDbSource)
+		if err == nil {
+			if err := dbConn.Ping(); err == nil {
+				worker := discovery.NewWorker(cfg.YouTubeAPIKey)
+				trackRepo := trackdb.New(dbConn)
+				scheduler = discovery.NewScheduler(worker, uploader, trackRepo, 12*time.Hour)
+			} else {
+				log.Printf("Warning: Failed to ping track DB for gateway scheduler: %v", err)
+			}
+		} else {
+			log.Printf("Warning: Failed to connect to track DB for gateway: %v", err)
+		}
+	}
+
 	// 1. Run HTTP REST in background for Web/Postman - passing BOTH client targets seamlessly!
-	go http.StartHTTPServer(server.Cfg, server.AuthClient, server.TrackClient)
+	go http.StartHTTPServer(server.Cfg, server.AuthClient, server.TrackClient, uploader, scheduler)
 
 	// 2. Run Mobile gRPC listener (Blocks and keeps main alive)
 	server.StartMobileGRPCListener()

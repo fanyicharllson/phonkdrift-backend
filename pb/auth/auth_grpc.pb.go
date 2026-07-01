@@ -19,16 +19,21 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_RegisterUser_FullMethodName    = "/auth.AuthService/RegisterUser"
-	AuthService_LoginUser_FullMethodName       = "/auth.AuthService/LoginUser"
-	AuthService_ValidateToken_FullMethodName   = "/auth.AuthService/ValidateToken"
-	AuthService_VerifyCode_FullMethodName      = "/auth.AuthService/VerifyCode"
-	AuthService_ResendCode_FullMethodName      = "/auth.AuthService/ResendCode"
-	AuthService_GetUser_FullMethodName         = "/auth.AuthService/GetUser"
-	AuthService_UpdateProfile_FullMethodName   = "/auth.AuthService/UpdateProfile"
-	AuthService_ForgotPassword_FullMethodName  = "/auth.AuthService/ForgotPassword"
-	AuthService_ResetPassword_FullMethodName   = "/auth.AuthService/ResetPassword"
-	AuthService_VerifyResetCode_FullMethodName = "/auth.AuthService/VerifyResetCode"
+	AuthService_RegisterUser_FullMethodName         = "/auth.AuthService/RegisterUser"
+	AuthService_LoginUser_FullMethodName            = "/auth.AuthService/LoginUser"
+	AuthService_ValidateToken_FullMethodName        = "/auth.AuthService/ValidateToken"
+	AuthService_VerifyCode_FullMethodName           = "/auth.AuthService/VerifyCode"
+	AuthService_ResendCode_FullMethodName           = "/auth.AuthService/ResendCode"
+	AuthService_GetUser_FullMethodName              = "/auth.AuthService/GetUser"
+	AuthService_UpdateProfile_FullMethodName        = "/auth.AuthService/UpdateProfile"
+	AuthService_ForgotPassword_FullMethodName       = "/auth.AuthService/ForgotPassword"
+	AuthService_ResetPassword_FullMethodName        = "/auth.AuthService/ResetPassword"
+	AuthService_VerifyResetCode_FullMethodName      = "/auth.AuthService/VerifyResetCode"
+	AuthService_BanUser_FullMethodName              = "/auth.AuthService/BanUser"
+	AuthService_UnbanUser_FullMethodName            = "/auth.AuthService/UnbanUser"
+	AuthService_SendPushNotification_FullMethodName = "/auth.AuthService/SendPushNotification"
+	AuthService_UpdateFCMToken_FullMethodName       = "/auth.AuthService/UpdateFCMToken"
+	AuthService_GetUserStatus_FullMethodName        = "/auth.AuthService/GetUserStatus"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -47,6 +52,12 @@ type AuthServiceClient interface {
 	ForgotPassword(ctx context.Context, in *ForgotPasswordRequest, opts ...grpc.CallOption) (*ForgotPasswordResponse, error)
 	ResetPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*ResetPasswordResponse, error)
 	VerifyResetCode(ctx context.Context, in *VerifyResetCodeRequest, opts ...grpc.CallOption) (*VerifyResetCodeResponse, error)
+	// Admin operations
+	BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error)
+	UnbanUser(ctx context.Context, in *UnbanUserRequest, opts ...grpc.CallOption) (*UnbanUserResponse, error)
+	SendPushNotification(ctx context.Context, in *PushNotificationRequest, opts ...grpc.CallOption) (*PushNotificationResponse, error)
+	UpdateFCMToken(ctx context.Context, in *UpdateFCMTokenRequest, opts ...grpc.CallOption) (*UpdateFCMTokenResponse, error)
+	GetUserStatus(ctx context.Context, in *GetUserStatusRequest, opts ...grpc.CallOption) (*GetUserStatusResponse, error)
 }
 
 type authServiceClient struct {
@@ -157,6 +168,56 @@ func (c *authServiceClient) VerifyResetCode(ctx context.Context, in *VerifyReset
 	return out, nil
 }
 
+func (c *authServiceClient) BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BanUserResponse)
+	err := c.cc.Invoke(ctx, AuthService_BanUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) UnbanUser(ctx context.Context, in *UnbanUserRequest, opts ...grpc.CallOption) (*UnbanUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnbanUserResponse)
+	err := c.cc.Invoke(ctx, AuthService_UnbanUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) SendPushNotification(ctx context.Context, in *PushNotificationRequest, opts ...grpc.CallOption) (*PushNotificationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PushNotificationResponse)
+	err := c.cc.Invoke(ctx, AuthService_SendPushNotification_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) UpdateFCMToken(ctx context.Context, in *UpdateFCMTokenRequest, opts ...grpc.CallOption) (*UpdateFCMTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateFCMTokenResponse)
+	err := c.cc.Invoke(ctx, AuthService_UpdateFCMToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) GetUserStatus(ctx context.Context, in *GetUserStatusRequest, opts ...grpc.CallOption) (*GetUserStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserStatusResponse)
+	err := c.cc.Invoke(ctx, AuthService_GetUserStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -173,6 +234,12 @@ type AuthServiceServer interface {
 	ForgotPassword(context.Context, *ForgotPasswordRequest) (*ForgotPasswordResponse, error)
 	ResetPassword(context.Context, *ResetPasswordRequest) (*ResetPasswordResponse, error)
 	VerifyResetCode(context.Context, *VerifyResetCodeRequest) (*VerifyResetCodeResponse, error)
+	// Admin operations
+	BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error)
+	UnbanUser(context.Context, *UnbanUserRequest) (*UnbanUserResponse, error)
+	SendPushNotification(context.Context, *PushNotificationRequest) (*PushNotificationResponse, error)
+	UpdateFCMToken(context.Context, *UpdateFCMTokenRequest) (*UpdateFCMTokenResponse, error)
+	GetUserStatus(context.Context, *GetUserStatusRequest) (*GetUserStatusResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -212,6 +279,21 @@ func (UnimplementedAuthServiceServer) ResetPassword(context.Context, *ResetPassw
 }
 func (UnimplementedAuthServiceServer) VerifyResetCode(context.Context, *VerifyResetCodeRequest) (*VerifyResetCodeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method VerifyResetCode not implemented")
+}
+func (UnimplementedAuthServiceServer) BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BanUser not implemented")
+}
+func (UnimplementedAuthServiceServer) UnbanUser(context.Context, *UnbanUserRequest) (*UnbanUserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UnbanUser not implemented")
+}
+func (UnimplementedAuthServiceServer) SendPushNotification(context.Context, *PushNotificationRequest) (*PushNotificationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendPushNotification not implemented")
+}
+func (UnimplementedAuthServiceServer) UpdateFCMToken(context.Context, *UpdateFCMTokenRequest) (*UpdateFCMTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateFCMToken not implemented")
+}
+func (UnimplementedAuthServiceServer) GetUserStatus(context.Context, *GetUserStatusRequest) (*GetUserStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserStatus not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -414,6 +496,96 @@ func _AuthService_VerifyResetCode_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_BanUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BanUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).BanUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_BanUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).BanUser(ctx, req.(*BanUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_UnbanUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnbanUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).UnbanUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_UnbanUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).UnbanUser(ctx, req.(*UnbanUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_SendPushNotification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PushNotificationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).SendPushNotification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_SendPushNotification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).SendPushNotification(ctx, req.(*PushNotificationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_UpdateFCMToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateFCMTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).UpdateFCMToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_UpdateFCMToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).UpdateFCMToken(ctx, req.(*UpdateFCMTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_GetUserStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetUserStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetUserStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetUserStatus(ctx, req.(*GetUserStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -460,6 +632,26 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VerifyResetCode",
 			Handler:    _AuthService_VerifyResetCode_Handler,
+		},
+		{
+			MethodName: "BanUser",
+			Handler:    _AuthService_BanUser_Handler,
+		},
+		{
+			MethodName: "UnbanUser",
+			Handler:    _AuthService_UnbanUser_Handler,
+		},
+		{
+			MethodName: "SendPushNotification",
+			Handler:    _AuthService_SendPushNotification_Handler,
+		},
+		{
+			MethodName: "UpdateFCMToken",
+			Handler:    _AuthService_UpdateFCMToken_Handler,
+		},
+		{
+			MethodName: "GetUserStatus",
+			Handler:    _AuthService_GetUserStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

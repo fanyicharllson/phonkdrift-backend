@@ -22,30 +22,45 @@ const (
 	TrackService_SearchTrack_FullMethodName           = "/track.TrackService/SearchTrack"
 	TrackService_GetStreamURL_FullMethodName          = "/track.TrackService/GetStreamURL"
 	TrackService_GetTrendingTracks_FullMethodName     = "/track.TrackService/GetTrendingTracks"
+	TrackService_GetForYou_FullMethodName             = "/track.TrackService/GetForYou"
 	TrackService_SyncPlaybackTelemetry_FullMethodName = "/track.TrackService/SyncPlaybackTelemetry"
 	TrackService_GetRecentlyPlayed_FullMethodName     = "/track.TrackService/GetRecentlyPlayed"
 	TrackService_SetTrackInteraction_FullMethodName   = "/track.TrackService/SetTrackInteraction"
 	TrackService_CreatePlaylist_FullMethodName        = "/track.TrackService/CreatePlaylist"
 	TrackService_AddToPlaylist_FullMethodName         = "/track.TrackService/AddToPlaylist"
+	TrackService_SeedTrack_FullMethodName             = "/track.TrackService/SeedTrack"
+	TrackService_ListTracksAdmin_FullMethodName       = "/track.TrackService/ListTracksAdmin"
+	TrackService_ApproveTrack_FullMethodName          = "/track.TrackService/ApproveTrack"
+	TrackService_RejectTrack_FullMethodName           = "/track.TrackService/RejectTrack"
+	TrackService_FeatureTrack_FullMethodName          = "/track.TrackService/FeatureTrack"
+	TrackService_DeleteTrack_FullMethodName           = "/track.TrackService/DeleteTrack"
+	TrackService_GetAdminStats_FullMethodName         = "/track.TrackService/GetAdminStats"
 )
 
 // TrackServiceClient is the client API for TrackService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// Service managing track playback metadata, streaming sessions, and user interactions
 type TrackServiceClient interface {
-	// 🔍 TRACK DISCOVERY LAYER
+	// TRACK DISCOVERY LAYER
 	SearchTrack(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
 	GetStreamURL(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (*StreamResponse, error)
 	GetTrendingTracks(ctx context.Context, in *TrendingRequest, opts ...grpc.CallOption) (*TrendingResponse, error)
-	// 🔄 TELEMETRY & PLAYBACK SYNC LAYER (SoundCloud Style)
+	GetForYou(ctx context.Context, in *ForYouRequest, opts ...grpc.CallOption) (*ForYouResponse, error)
+	// TELEMETRY & PLAYBACK SYNC LAYER
 	SyncPlaybackTelemetry(ctx context.Context, in *PlaybackTelemetryRequest, opts ...grpc.CallOption) (*PlaybackTelemetryResponse, error)
 	GetRecentlyPlayed(ctx context.Context, in *RecentlyPlayedRequest, opts ...grpc.CallOption) (*RecentlyPlayedResponse, error)
-	// 📁 USER LIBRARY & PLAYLIST LAYER
+	// USER LIBRARY & PLAYLIST LAYER
 	SetTrackInteraction(ctx context.Context, in *InteractionRequest, opts ...grpc.CallOption) (*InteractionResponse, error)
 	CreatePlaylist(ctx context.Context, in *CreatePlaylistRequest, opts ...grpc.CallOption) (*PlaylistResponse, error)
 	AddToPlaylist(ctx context.Context, in *PlaylistTrackRequest, opts ...grpc.CallOption) (*PlaylistActionResponse, error)
+	// — Admin operations
+	SeedTrack(ctx context.Context, in *SeedTrackRequest, opts ...grpc.CallOption) (*SeedTrackResponse, error)
+	ListTracksAdmin(ctx context.Context, in *ListTracksAdminRequest, opts ...grpc.CallOption) (*ListTracksAdminResponse, error)
+	ApproveTrack(ctx context.Context, in *TrackActionRequest, opts ...grpc.CallOption) (*TrackActionResponse, error)
+	RejectTrack(ctx context.Context, in *TrackActionRequest, opts ...grpc.CallOption) (*TrackActionResponse, error)
+	FeatureTrack(ctx context.Context, in *FeatureTrackRequest, opts ...grpc.CallOption) (*TrackActionResponse, error)
+	DeleteTrack(ctx context.Context, in *TrackActionRequest, opts ...grpc.CallOption) (*TrackActionResponse, error)
+	GetAdminStats(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AdminStatsResponse, error)
 }
 
 type trackServiceClient struct {
@@ -80,6 +95,16 @@ func (c *trackServiceClient) GetTrendingTracks(ctx context.Context, in *Trending
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TrendingResponse)
 	err := c.cc.Invoke(ctx, TrackService_GetTrendingTracks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) GetForYou(ctx context.Context, in *ForYouRequest, opts ...grpc.CallOption) (*ForYouResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForYouResponse)
+	err := c.cc.Invoke(ctx, TrackService_GetForYou_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -136,23 +161,100 @@ func (c *trackServiceClient) AddToPlaylist(ctx context.Context, in *PlaylistTrac
 	return out, nil
 }
 
+func (c *trackServiceClient) SeedTrack(ctx context.Context, in *SeedTrackRequest, opts ...grpc.CallOption) (*SeedTrackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SeedTrackResponse)
+	err := c.cc.Invoke(ctx, TrackService_SeedTrack_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) ListTracksAdmin(ctx context.Context, in *ListTracksAdminRequest, opts ...grpc.CallOption) (*ListTracksAdminResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTracksAdminResponse)
+	err := c.cc.Invoke(ctx, TrackService_ListTracksAdmin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) ApproveTrack(ctx context.Context, in *TrackActionRequest, opts ...grpc.CallOption) (*TrackActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TrackActionResponse)
+	err := c.cc.Invoke(ctx, TrackService_ApproveTrack_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) RejectTrack(ctx context.Context, in *TrackActionRequest, opts ...grpc.CallOption) (*TrackActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TrackActionResponse)
+	err := c.cc.Invoke(ctx, TrackService_RejectTrack_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) FeatureTrack(ctx context.Context, in *FeatureTrackRequest, opts ...grpc.CallOption) (*TrackActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TrackActionResponse)
+	err := c.cc.Invoke(ctx, TrackService_FeatureTrack_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) DeleteTrack(ctx context.Context, in *TrackActionRequest, opts ...grpc.CallOption) (*TrackActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TrackActionResponse)
+	err := c.cc.Invoke(ctx, TrackService_DeleteTrack_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) GetAdminStats(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AdminStatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminStatsResponse)
+	err := c.cc.Invoke(ctx, TrackService_GetAdminStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TrackServiceServer is the server API for TrackService service.
 // All implementations must embed UnimplementedTrackServiceServer
 // for forward compatibility.
-//
-// Service managing track playback metadata, streaming sessions, and user interactions
 type TrackServiceServer interface {
-	// 🔍 TRACK DISCOVERY LAYER
+	// TRACK DISCOVERY LAYER
 	SearchTrack(context.Context, *SearchRequest) (*SearchResponse, error)
 	GetStreamURL(context.Context, *StreamRequest) (*StreamResponse, error)
 	GetTrendingTracks(context.Context, *TrendingRequest) (*TrendingResponse, error)
-	// 🔄 TELEMETRY & PLAYBACK SYNC LAYER (SoundCloud Style)
+	GetForYou(context.Context, *ForYouRequest) (*ForYouResponse, error)
+	// TELEMETRY & PLAYBACK SYNC LAYER
 	SyncPlaybackTelemetry(context.Context, *PlaybackTelemetryRequest) (*PlaybackTelemetryResponse, error)
 	GetRecentlyPlayed(context.Context, *RecentlyPlayedRequest) (*RecentlyPlayedResponse, error)
-	// 📁 USER LIBRARY & PLAYLIST LAYER
+	// USER LIBRARY & PLAYLIST LAYER
 	SetTrackInteraction(context.Context, *InteractionRequest) (*InteractionResponse, error)
 	CreatePlaylist(context.Context, *CreatePlaylistRequest) (*PlaylistResponse, error)
 	AddToPlaylist(context.Context, *PlaylistTrackRequest) (*PlaylistActionResponse, error)
+	// — Admin operations
+	SeedTrack(context.Context, *SeedTrackRequest) (*SeedTrackResponse, error)
+	ListTracksAdmin(context.Context, *ListTracksAdminRequest) (*ListTracksAdminResponse, error)
+	ApproveTrack(context.Context, *TrackActionRequest) (*TrackActionResponse, error)
+	RejectTrack(context.Context, *TrackActionRequest) (*TrackActionResponse, error)
+	FeatureTrack(context.Context, *FeatureTrackRequest) (*TrackActionResponse, error)
+	DeleteTrack(context.Context, *TrackActionRequest) (*TrackActionResponse, error)
+	GetAdminStats(context.Context, *Empty) (*AdminStatsResponse, error)
 	mustEmbedUnimplementedTrackServiceServer()
 }
 
@@ -172,6 +274,9 @@ func (UnimplementedTrackServiceServer) GetStreamURL(context.Context, *StreamRequ
 func (UnimplementedTrackServiceServer) GetTrendingTracks(context.Context, *TrendingRequest) (*TrendingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTrendingTracks not implemented")
 }
+func (UnimplementedTrackServiceServer) GetForYou(context.Context, *ForYouRequest) (*ForYouResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetForYou not implemented")
+}
 func (UnimplementedTrackServiceServer) SyncPlaybackTelemetry(context.Context, *PlaybackTelemetryRequest) (*PlaybackTelemetryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SyncPlaybackTelemetry not implemented")
 }
@@ -186,6 +291,27 @@ func (UnimplementedTrackServiceServer) CreatePlaylist(context.Context, *CreatePl
 }
 func (UnimplementedTrackServiceServer) AddToPlaylist(context.Context, *PlaylistTrackRequest) (*PlaylistActionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddToPlaylist not implemented")
+}
+func (UnimplementedTrackServiceServer) SeedTrack(context.Context, *SeedTrackRequest) (*SeedTrackResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SeedTrack not implemented")
+}
+func (UnimplementedTrackServiceServer) ListTracksAdmin(context.Context, *ListTracksAdminRequest) (*ListTracksAdminResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListTracksAdmin not implemented")
+}
+func (UnimplementedTrackServiceServer) ApproveTrack(context.Context, *TrackActionRequest) (*TrackActionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ApproveTrack not implemented")
+}
+func (UnimplementedTrackServiceServer) RejectTrack(context.Context, *TrackActionRequest) (*TrackActionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RejectTrack not implemented")
+}
+func (UnimplementedTrackServiceServer) FeatureTrack(context.Context, *FeatureTrackRequest) (*TrackActionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method FeatureTrack not implemented")
+}
+func (UnimplementedTrackServiceServer) DeleteTrack(context.Context, *TrackActionRequest) (*TrackActionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteTrack not implemented")
+}
+func (UnimplementedTrackServiceServer) GetAdminStats(context.Context, *Empty) (*AdminStatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAdminStats not implemented")
 }
 func (UnimplementedTrackServiceServer) mustEmbedUnimplementedTrackServiceServer() {}
 func (UnimplementedTrackServiceServer) testEmbeddedByValue()                      {}
@@ -258,6 +384,24 @@ func _TrackService_GetTrendingTracks_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TrackServiceServer).GetTrendingTracks(ctx, req.(*TrendingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_GetForYou_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForYouRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).GetForYou(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_GetForYou_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).GetForYou(ctx, req.(*ForYouRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -352,6 +496,132 @@ func _TrackService_AddToPlaylist_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TrackService_SeedTrack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SeedTrackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).SeedTrack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_SeedTrack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).SeedTrack(ctx, req.(*SeedTrackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_ListTracksAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTracksAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).ListTracksAdmin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_ListTracksAdmin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).ListTracksAdmin(ctx, req.(*ListTracksAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_ApproveTrack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TrackActionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).ApproveTrack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_ApproveTrack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).ApproveTrack(ctx, req.(*TrackActionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_RejectTrack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TrackActionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).RejectTrack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_RejectTrack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).RejectTrack(ctx, req.(*TrackActionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_FeatureTrack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FeatureTrackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).FeatureTrack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_FeatureTrack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).FeatureTrack(ctx, req.(*FeatureTrackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_DeleteTrack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TrackActionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).DeleteTrack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_DeleteTrack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).DeleteTrack(ctx, req.(*TrackActionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_GetAdminStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).GetAdminStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_GetAdminStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).GetAdminStats(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TrackService_ServiceDesc is the grpc.ServiceDesc for TrackService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -372,6 +642,10 @@ var TrackService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _TrackService_GetTrendingTracks_Handler,
 		},
 		{
+			MethodName: "GetForYou",
+			Handler:    _TrackService_GetForYou_Handler,
+		},
+		{
 			MethodName: "SyncPlaybackTelemetry",
 			Handler:    _TrackService_SyncPlaybackTelemetry_Handler,
 		},
@@ -390,6 +664,34 @@ var TrackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddToPlaylist",
 			Handler:    _TrackService_AddToPlaylist_Handler,
+		},
+		{
+			MethodName: "SeedTrack",
+			Handler:    _TrackService_SeedTrack_Handler,
+		},
+		{
+			MethodName: "ListTracksAdmin",
+			Handler:    _TrackService_ListTracksAdmin_Handler,
+		},
+		{
+			MethodName: "ApproveTrack",
+			Handler:    _TrackService_ApproveTrack_Handler,
+		},
+		{
+			MethodName: "RejectTrack",
+			Handler:    _TrackService_RejectTrack_Handler,
+		},
+		{
+			MethodName: "FeatureTrack",
+			Handler:    _TrackService_FeatureTrack_Handler,
+		},
+		{
+			MethodName: "DeleteTrack",
+			Handler:    _TrackService_DeleteTrack_Handler,
+		},
+		{
+			MethodName: "GetAdminStats",
+			Handler:    _TrackService_GetAdminStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

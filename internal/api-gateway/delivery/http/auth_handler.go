@@ -6,14 +6,21 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/fanyicharllson/phonkdrift-backend/internal/config" // 💡 CHANGED: Using unified global config
+	"github.com/fanyicharllson/phonkdrift-backend/internal/config"
+	discovery "github.com/fanyicharllson/phonkdrift-backend/internal/discovery-service"
 	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
-	trackpb "github.com/fanyicharllson/phonkdrift-backend/pb/track" // 💡 ADDED: Import track protobuf descriptors
+	trackpb "github.com/fanyicharllson/phonkdrift-backend/pb/track"
 	"github.com/gin-gonic/gin"
 )
 
 // StartHTTPServer accepts BOTH clients to multiplex proxy endpoints out cleanly
-func StartHTTPServer(cfg *config.Config, authClient authpb.AuthServiceClient, trackClient trackpb.TrackServiceClient) {
+func StartHTTPServer(
+	cfg *config.Config,
+	authClient authpb.AuthServiceClient,
+	trackClient trackpb.TrackServiceClient,
+	uploader *discovery.Uploader,
+	scheduler *discovery.Scheduler,
+) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
@@ -26,6 +33,7 @@ func StartHTTPServer(cfg *config.Config, authClient authpb.AuthServiceClient, tr
 		publicAuth.POST("/register", handleRegister(authClient))
 		publicAuth.POST("/login", handleLogin(authClient))
 		publicAuth.POST("/verify-code", handleVerifyCode(authClient))
+        publicAuth.GET("/user/status/:user_id", handleGetUserStatus(authClient))
 	}
 
 	// 🏎️ Public Track Engine Delivery Group (Placeholder for rest testing if needed)
@@ -33,6 +41,9 @@ func StartHTTPServer(cfg *config.Config, authClient authpb.AuthServiceClient, tr
 	// {
 	//     // You can add HTTP mappings to proxy into trackClient here later!
 	// }
+
+	// Register Admin Routes
+	RegisterAdminRoutes(r, cfg, authClient, trackClient, uploader, scheduler)
 
 	// Format port address cleanly using unified config structure
 	address := ":" + cfg.ApiGatewayHttpPort
@@ -100,6 +111,34 @@ func handleLogin(authClient authpb.AuthServiceClient) gin.HandlerFunc {
 			"token":      res.GetToken(),
 			"user_id":    res.GetUserId(),
 			"expires_at": res.GetExpiresAt(),
+		})
+	}
+}
+
+func handleGetUserStatus(authClient authpb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.Param("user_id")
+		if userID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user_id required"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		res, err := authClient.GetUserStatus(ctx, &authpb.GetUserStatusRequest{
+			UserId: userID,
+		})
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"is_banned":   res.GetIsBanned(),
+			"ban_reason":  res.GetBanReason(),
+			"username":    res.GetUsername(),
+			"phonk_level": res.GetPhonkLevel(),
 		})
 	}
 }

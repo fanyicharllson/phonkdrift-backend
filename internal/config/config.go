@@ -55,7 +55,7 @@ func LoadConfig() (config Config, err error) {
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	// ✅ THE FIX: explicitly bind every key so Unmarshal picks up
+	// explicitly bind every key so Unmarshal picks up
 	// system env vars injected by Kubernetes secrets/configmaps
 	envKeys := []string{
 		"AUTH_SERVICE_ADDR", "TRACK_SERVICE_ADDR", "CHAT_SERVICE_ADDR",

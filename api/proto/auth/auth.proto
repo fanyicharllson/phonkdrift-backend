@@ -16,6 +16,14 @@ service AuthService {
   rpc ForgotPassword (ForgotPasswordRequest) returns (ForgotPasswordResponse);
   rpc ResetPassword (ResetPasswordRequest) returns (ResetPasswordResponse);
   rpc VerifyResetCode (VerifyResetCodeRequest) returns (VerifyResetCodeResponse);
+
+  // Admin operations
+  rpc BanUser (BanUserRequest) returns (BanUserResponse);
+  rpc UnbanUser (UnbanUserRequest) returns (UnbanUserResponse);
+  rpc SendPushNotification (PushNotificationRequest) returns (PushNotificationResponse);
+  rpc UpdateFCMToken (UpdateFCMTokenRequest) returns (UpdateFCMTokenResponse);
+
+  rpc GetUserStatus (GetUserStatusRequest) returns (GetUserStatusResponse);
 }
 
 message RegisterRequest {
@@ -99,6 +107,7 @@ message User {
   string email       = 3;
   string avatar_url  = 4;
   string phonk_level = 5;
+  bool   is_banned   = 6;
 }
 
 message ForgotPasswordRequest {
@@ -128,4 +137,55 @@ message VerifyResetCodeRequest {
 message VerifyResetCodeResponse {
     bool success = 1;
     string reset_token = 2; // Short-lived token purely for password updating
+}
+
+//  — Admin Ban System
+message BanUserRequest {
+  string user_id = 1;
+  string reason  = 2;
+}
+message BanUserResponse {
+  bool   success = 1;
+  string message = 2;
+}
+message UnbanUserRequest {
+  string user_id = 1;
+}
+message UnbanUserResponse {
+  bool   success = 1;
+  string message = 2;
+}
+
+//  — FCM Push Notifications
+message PushNotificationRequest {
+  string title          = 1;
+  string body           = 2;
+  string target_user_id = 3; // empty = broadcast to all
+  string data_type      = 4; // "trending", "new_track", "chat", etc.
+  string data_id        = 5; // ID to navigate to on tap
+}
+message PushNotificationResponse {
+  bool   success       = 1;
+  int32  sent_count    = 2;
+  string message       = 3;
+}
+
+//  FCM Token Registration (called from Flutter on login)
+message UpdateFCMTokenRequest {
+  string user_id   = 1;
+  string fcm_token = 2;
+}
+message UpdateFCMTokenResponse {
+  bool success = 1;
+}
+
+message GetUserStatusRequest {
+  string user_id = 1;
+}
+
+message GetUserStatusResponse {
+  bool   is_banned   = 1;
+  string ban_reason  = 2;
+  string username    = 3;
+  string phonk_level = 4;
 }

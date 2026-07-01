@@ -113,6 +113,10 @@ func (u *authUseCase) LoginUser(ctx context.Context, email, password string) (st
 		return "", nil, 0, errors.New("please verify your email before logging in")
 	}
 
+	if user.IsBanned {
+		return "", nil, 0, fmt.Errorf("account suspended: %s", user.BanReason)
+	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
 		return "", nil, 0, errors.New("invalid email or password")
@@ -126,6 +130,7 @@ func (u *authUseCase) LoginUser(ctx context.Context, email, password string) (st
 
 	return tokenString, user, expiresAt, nil
 }
+
 func (u *authUseCase) ValidateToken(ctx context.Context, tokenString string) (string, string, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
@@ -158,6 +163,11 @@ func (u *authUseCase) ValidateToken(ctx context.Context, tokenString string) (st
 		return "", "", errors.New("failed to parse session identity")
 	}
 
+	user, err := u.repo.GetUserByID(ctx, userID)
+	if err == nil && user != nil && user.IsBanned {
+		return "", "", errors.New("account suspended")
+	}
+
 	return userID, username, nil
 }
 
@@ -187,6 +197,14 @@ func (u *authUseCase) GetUser(ctx context.Context, userID string) (*domain.User,
 	user, err := u.repo.GetUserByID(ctx, userID)
 	if err != nil || user == nil {
 		return nil, errors.New("user profile not found")
+	}
+	return user, nil
+}
+
+func (u *authUseCase) GetUserStatus(ctx context.Context, userID string) (*domain.User, error) {
+	user, err := u.repo.GetUserByID(ctx, userID)
+	if err != nil || user == nil {
+		return nil, errors.New("user not found")
 	}
 	return user, nil
 }
@@ -280,6 +298,53 @@ func (u *authUseCase) VerifyResetCode(ctx context.Context, email, code string) (
 
 	return true, nil
 }
+
+func (u *authUseCase) BanUser(ctx context.Context, userID, reason string) error {
+	return u.repo.BanUser(ctx, userID, reason)
+}
+
+func (u *authUseCase) UnbanUser(ctx context.Context, userID string) error {
+	return u.repo.UnbanUser(ctx, userID)
+}
+
+func (u *authUseCase) UpdateFCMToken(ctx context.Context, userID, fcmToken string) error {
+	return u.repo.UpdateFCMToken(ctx, userID, fcmToken)
+}
+
+func (u *authUseCase) SendPushNotification(ctx context.Context, title, body, targetUserID, dataType, dataID string) (int, error) {
+	var tokens []string
+	var err error
+
+	if targetUserID != "" {
+		// Single user push
+		user, err := u.repo.GetUserByID(ctx, targetUserID)
+		if err != nil || user == nil {
+			return 0, fmt.Errorf("target user not found")
+		}
+		if user.FCMToken == "" {
+			return 0, fmt.Errorf("user has no FCM token registered")
+		}
+		tokens = []string{user.FCMToken}
+	} else {
+		// Broadcast to all active users
+		tokens, err = u.repo.GetAllFCMTokens(ctx)
+		if err != nil {
+			return 0, fmt.Errorf("failed to fetch FCM tokens: %w", err)
+		}
+	}
+
+	if len(tokens) == 0 {
+		return 0, nil
+	}
+
+	sentCount, err := sendFCMNotifications(tokens, title, body, dataType, dataID)
+	if err != nil {
+		return 0, err
+	}
+
+	return sentCount, nil
+}
+
 
 // Helpers
 func generateCode() (string, time.Time) {

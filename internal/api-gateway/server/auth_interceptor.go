@@ -29,6 +29,7 @@ var publicMethods = map[string]struct{}{
     authpb.AuthService_ForgotPassword_FullMethodName:  {},
     authpb.AuthService_VerifyResetCode_FullMethodName: {},
     authpb.AuthService_ResetPassword_FullMethodName:   {},
+	authpb.AuthService_GetUserStatus_FullMethodName: {},
 }
 
 func (s *GatewayServer) authUnaryInterceptor() grpc.UnaryServerInterceptor {

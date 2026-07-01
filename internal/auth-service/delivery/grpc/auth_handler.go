@@ -172,6 +172,46 @@ func (h *AuthGRPCHandler) VerifyResetCode(ctx context.Context, req *authpb.Verif
 	}, nil
 }
 
+// ==========================================
+// 🔨 4. ADMIN OPERATIONS
+// ==========================================
+
+func (h *AuthGRPCHandler) BanUser(ctx context.Context, req *authpb.BanUserRequest) (*authpb.BanUserResponse, error) {
+	err := h.useCase.BanUser(ctx, req.GetUserId(), req.GetReason())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to ban user: %v", err)
+	}
+	return &authpb.BanUserResponse{Success: true, Message: "User banned successfully"}, nil
+}
+
+func (h *AuthGRPCHandler) UnbanUser(ctx context.Context, req *authpb.UnbanUserRequest) (*authpb.UnbanUserResponse, error) {
+	err := h.useCase.UnbanUser(ctx, req.GetUserId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to unban user: %v", err)
+	}
+	return &authpb.UnbanUserResponse{Success: true, Message: "User unbanned successfully"}, nil
+}
+
+func (h *AuthGRPCHandler) SendPushNotification(ctx context.Context, req *authpb.PushNotificationRequest) (*authpb.PushNotificationResponse, error) {
+	count, err := h.useCase.SendPushNotification(ctx, req.GetTitle(), req.GetBody(), req.GetTargetUserId(), req.GetDataType(), req.GetDataId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "push notification failed: %v", err)
+	}
+	return &authpb.PushNotificationResponse{
+		Success:   true,
+		SentCount: int32(count),
+		Message:   "Notifications dispatched successfully",
+	}, nil
+}
+
+func (h *AuthGRPCHandler) UpdateFCMToken(ctx context.Context, req *authpb.UpdateFCMTokenRequest) (*authpb.UpdateFCMTokenResponse, error) {
+	err := h.useCase.UpdateFCMToken(ctx, req.GetUserId(), req.GetFcmToken())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update FCM token: %v", err)
+	}
+	return &authpb.UpdateFCMTokenResponse{Success: true}, nil
+}
+
 func bearerTokenFromContext(ctx context.Context) string {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -199,5 +239,6 @@ func userToProto(user *domain.User) *authpb.User {
 		Email:      user.Email,
 		AvatarUrl:  user.AvatarURL,
 		PhonkLevel: user.PhonkLevel,
+		IsBanned:   user.IsBanned, // ✅ NEW
 	}
 }

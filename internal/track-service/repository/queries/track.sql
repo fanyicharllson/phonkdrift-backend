@@ -31,11 +31,6 @@ WHERE lh.user_id = $1
 ORDER BY lh.updated_at DESC
 LIMIT $2;
 
--- name: GetTrendingTracks :many
-SELECT * FROM tracks
-ORDER BY play_count DESC, likes_count DESC
-LIMIT $1;
-
 -- name: GetTrackByYoutubeID :one
 SELECT * FROM tracks WHERE youtube_id = $1 LIMIT 1;
 
@@ -76,12 +71,18 @@ SELECT * FROM tracks
 WHERE is_approved = true 
   AND is_rejected = false
   AND storage_url IS NOT NULL
-  AND to_tsvector('english', title || ' ' || artist_name) @@ plainto_tsquery('english', $1)
+  AND to_tsvector('english', title || ' ' || artist_name) @@ plainto_tsquery('english', $1::text)
 ORDER BY play_count DESC
-LIMIT 20 OFFSET ($2 * 20);
+LIMIT 20 OFFSET ($2::integer * 20);
 
 -- name: GetForYouTracks :many
 SELECT * FROM tracks
 WHERE is_approved = true AND is_rejected = false AND storage_url IS NOT NULL
 ORDER BY RANDOM()
+LIMIT $1;
+
+-- name: GetTrendingTracks :many
+SELECT * FROM tracks
+WHERE is_approved = true AND is_rejected = false AND storage_url IS NOT NULL
+ORDER BY play_count DESC, likes_count DESC
 LIMIT $1;

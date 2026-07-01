@@ -49,7 +49,7 @@ func main() {
 	log.Printf("Successfully connected to Redis Cache at %s! 🚀\n", cfg.RedisAddr)
 
 	repositoryObj := db.New(conn)
-	trackUsecase := usecase.NewTrackUsecase(repositoryObj, rdb)
+	trackUsecase := usecase.NewTrackUsecase(repositoryObj, rdb, cfg.YouTubeAPIKey)
 	grpcHandler := delivery.NewTrackGRPCHandler(trackUsecase)
 
 	address := ":" + cfg.TrackGrpcPort

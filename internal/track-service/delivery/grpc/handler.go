@@ -143,3 +143,78 @@ func (h *TrackGRPCHandler) AddToPlaylist(ctx context.Context, req *trackpb.Playl
 		Message: "Track successfully appended to playlist",
 	}, nil
 }
+
+// ==========================================
+// 🔨 4. ADMIN OPERATIONS
+// ==========================================
+
+func (h *TrackGRPCHandler) GetForYou(ctx context.Context, req *trackpb.ForYouRequest) (*trackpb.ForYouResponse, error) {
+	limit := req.GetLimit()
+	if limit <= 0 {
+		limit = 20
+	}
+	tracks, err := h.usecase.GetForYou(ctx, limit)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch ForYou feed: %v", err)
+	}
+	return &trackpb.ForYouResponse{Tracks: tracks}, nil
+}
+
+func (h *TrackGRPCHandler) SeedTrack(ctx context.Context, req *trackpb.SeedTrackRequest) (*trackpb.SeedTrackResponse, error) {
+	trackID, err := h.usecase.SeedTrack(ctx, req)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "seed failed: %v", err)
+	}
+	return &trackpb.SeedTrackResponse{
+		TrackId:   trackID,
+		StorageUrl: req.GetStorageUrl(),
+	}, nil
+}
+
+func (h *TrackGRPCHandler) ListTracksAdmin(ctx context.Context, req *trackpb.ListTracksAdminRequest) (*trackpb.ListTracksAdminResponse, error) {
+	tracks, total, err := h.usecase.ListTracksAdmin(ctx, req.GetPage(), req.GetLimit())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list tracks: %v", err)
+	}
+	return &trackpb.ListTracksAdminResponse{Tracks: tracks, Total: total}, nil
+}
+
+func (h *TrackGRPCHandler) ApproveTrack(ctx context.Context, req *trackpb.TrackActionRequest) (*trackpb.TrackActionResponse, error) {
+	err := h.usecase.ApproveTrack(ctx, req.GetTrackId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "approve failed: %v", err)
+	}
+	return &trackpb.TrackActionResponse{Success: true, Message: "Track approved"}, nil
+}
+
+func (h *TrackGRPCHandler) RejectTrack(ctx context.Context, req *trackpb.TrackActionRequest) (*trackpb.TrackActionResponse, error) {
+	err := h.usecase.RejectTrack(ctx, req.GetTrackId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "reject failed: %v", err)
+	}
+	return &trackpb.TrackActionResponse{Success: true, Message: "Track rejected"}, nil
+}
+
+func (h *TrackGRPCHandler) FeatureTrack(ctx context.Context, req *trackpb.FeatureTrackRequest) (*trackpb.TrackActionResponse, error) {
+	err := h.usecase.FeatureTrack(ctx, req.GetTrackId(), req.GetIsFeatured())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "feature toggle failed: %v", err)
+	}
+	return &trackpb.TrackActionResponse{Success: true, Message: "Feature status updated"}, nil
+}
+
+func (h *TrackGRPCHandler) DeleteTrack(ctx context.Context, req *trackpb.TrackActionRequest) (*trackpb.TrackActionResponse, error) {
+	err := h.usecase.DeleteTrack(ctx, req.GetTrackId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "delete failed: %v", err)
+	}
+	return &trackpb.TrackActionResponse{Success: true, Message: "Track deleted"}, nil
+}
+
+func (h *TrackGRPCHandler) GetAdminStats(ctx context.Context, _ *trackpb.Empty) (*trackpb.AdminStatsResponse, error) {
+	stats, err := h.usecase.GetAdminStats(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "stats fetch failed: %v", err)
+	}
+	return stats, nil
+}

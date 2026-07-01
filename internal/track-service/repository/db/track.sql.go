@@ -337,6 +337,7 @@ func (q *Queries) GetTrackByYoutubeID(ctx context.Context, youtubeID string) (Tr
 
 const getTrendingTracks = `-- name: GetTrendingTracks :many
 SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at, storage_url, genre, is_featured, is_approved, is_rejected, source, yt_view_count, fcm_notified FROM tracks
+WHERE is_approved = true AND is_rejected = false AND storage_url IS NOT NULL
 ORDER BY play_count DESC, likes_count DESC
 LIMIT $1
 `
@@ -470,18 +471,18 @@ SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, p
 WHERE is_approved = true 
   AND is_rejected = false
   AND storage_url IS NOT NULL
-  AND to_tsvector('english', title || ' ' || artist_name) @@ plainto_tsquery('english', $1)
+  AND to_tsvector('english', title || ' ' || artist_name) @@ plainto_tsquery('english', $1::text)
 ORDER BY play_count DESC
-LIMIT 20 OFFSET ($2 * 20)
+LIMIT 20 OFFSET ($2::integer * 20)
 `
 
 type SearchTracksParams struct {
-	PlaintoTsquery string      `json:"plainto_tsquery"`
-	Column2        interface{} `json:"column_2"`
+	Column1 string `json:"column_1"`
+	Column2 int32  `json:"column_2"`
 }
 
 func (q *Queries) SearchTracks(ctx context.Context, arg SearchTracksParams) ([]Track, error) {
-	rows, err := q.db.QueryContext(ctx, searchTracks, arg.PlaintoTsquery, arg.Column2)
+	rows, err := q.db.QueryContext(ctx, searchTracks, arg.Column1, arg.Column2)
 	if err != nil {
 		return nil, err
 	}

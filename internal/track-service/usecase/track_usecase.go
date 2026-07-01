@@ -3,8 +3,10 @@ package usecase
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os/exec"
 	"strings"
 	"time"
@@ -24,17 +26,27 @@ type TrackUsecase interface {
 	SetInteraction(ctx context.Context, userID string, trackID string, isLiked bool) error
 	NewPlaylist(ctx context.Context, userID string, name string, coverURL string) (*trackpb.PlaylistResponse, error)
 	AddTrackToPlaylist(ctx context.Context, playlistID string, trackID string) error
+	GetForYou(ctx context.Context, limit int32) ([]*trackpb.TrackMetadata, error)
+	SeedTrack(ctx context.Context, req *trackpb.SeedTrackRequest) (string, error)
+	ListTracksAdmin(ctx context.Context, page, limit int32) ([]*trackpb.TrackMetadata, int32, error)
+	ApproveTrack(ctx context.Context, trackID string) error
+	RejectTrack(ctx context.Context, trackID string) error
+	FeatureTrack(ctx context.Context, trackID string, featured bool) error
+	DeleteTrack(ctx context.Context, trackID string) error
+	GetAdminStats(ctx context.Context) (*trackpb.AdminStatsResponse, error)
 }
 
 type trackUsecase struct {
-	repo  db.Querier
-	rdb   *redis.Client
+	repo     db.Querier
+	rdb      *redis.Client
+	ytAPIKey string
 }
 
-func NewTrackUsecase(repo db.Querier, rdb *redis.Client) TrackUsecase {
+func NewTrackUsecase(repo db.Querier, rdb *redis.Client, ytAPIKey string) TrackUsecase {
 	return &trackUsecase{
-		repo: repo,
-		rdb:  rdb,
+		repo:     repo,
+		rdb:      rdb,
+		ytAPIKey: ytAPIKey,
 	}
 }
 
@@ -45,22 +57,25 @@ func NewTrackUsecase(repo db.Querier, rdb *redis.Client) TrackUsecase {
 func (u *trackUsecase) GetAudioStream(ctx context.Context, youtubeID string) (string, int64, error) {
 	cacheKey := fmt.Sprintf("stream:%s", youtubeID)
 
-	// ⚡ REDIS BYPASS LOOKUP: Check if raw stream link is already cached
+	// ⚡ Redis cache check first
 	cachedURL, err := u.rdb.Get(ctx, cacheKey).Result()
 	if err == nil && cachedURL != "" {
-		// Calculate safe remainder TTL window for the mobile app client
 		ttl, _ := u.rdb.TTL(ctx, cacheKey).Result()
-		expiresAt := time.Now().Add(ttl).Unix()
-		return cachedURL, expiresAt, nil
+		return cachedURL, time.Now().Add(ttl).Unix(), nil
 	}
 
-	// 🐌 CACHE MISS: Execute yt-dlp binary thread sub-process safely
-	videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", youtubeID)
-	args := []string{"-f", "bestaudio", "-g", videoURL}
+	// ✅ Check DB first — if we have a permanent storage_url, use it
+	track, err := u.repo.GetTrackByYoutubeID(ctx, youtubeID)
+	if err == nil && track.StorageUrl.Valid && track.StorageUrl.String != "" {
+		// Permanent CDN URL — cache for 24h, never expires on DO Spaces
+		_ = u.rdb.Set(ctx, cacheKey, track.StorageUrl.String, 24*time.Hour).Err()
+		return track.StorageUrl.String, time.Now().Add(24 * time.Hour).Unix(), nil
+	}
 
-	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
-	var out bytes.Buffer
-	var stderr bytes.Buffer
+	// 🐌 Fallback: yt-dlp for tracks not yet in storage (legacy path)
+	videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", youtubeID)
+	cmd := exec.CommandContext(ctx, "yt-dlp", "-f", "bestaudio", "-g", videoURL)
+	var out, stderr bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 
@@ -73,21 +88,15 @@ func (u *trackUsecase) GetAudioStream(ctx context.Context, youtubeID string) (st
 		return "", 0, fmt.Errorf("extracted streaming url is empty")
 	}
 
-	// Dynamic URLs expire in 6h; cache them safely for 5 hours to protect buffer thresholds
 	cacheTTL := 5 * time.Hour
-	expiresAt := time.Now().Add(cacheTTL).Unix()
-
-	// Commit back into Redis memory footprint asynchronously
 	_ = u.rdb.Set(ctx, cacheKey, streamURL, cacheTTL).Err()
-
-	return streamURL, expiresAt, nil
+	return streamURL, time.Now().Add(cacheTTL).Unix(), nil
 }
 
 func (u *trackUsecase) SearchTracks(ctx context.Context, query string, page int32) ([]*trackpb.TrackMetadata, error) {
 	cleanQuery := strings.TrimSpace(strings.ToLower(query))
 	cacheKey := fmt.Sprintf("search:%s:p%d", cleanQuery, page)
 
-	// ⚡ REDIS BYPASS LOOKUP: Return cached search results instantly
 	cachedData, err := u.rdb.Get(ctx, cacheKey).Result()
 	if err == nil && cachedData != "" {
 		var cachedTracks []*trackpb.TrackMetadata
@@ -96,32 +105,107 @@ func (u *trackUsecase) SearchTracks(ctx context.Context, query string, page int3
 		}
 	}
 
-	// DB LOOKUP LAYER: Fetch catalog matching query via SQLC
-	// (Using search mock until database search indices extensions match your model profile)
-	var results []*trackpb.TrackMetadata
-	results = append(results, &trackpb.TrackMetadata{
-		TrackId:           "local-track-uuid-1",
-		Title:             "PHONK DRIFT OVERDRIVE",
-		ArtistName:        "KORDHELL x DJ FANYI",
-		Duration:          "02:45",
-		ThumbnailUrl:      "https://supabase.co/storage/v1/object/public/covers/drift.jpg",
-		OriginalYoutubeId: "dQw4w9WgXcQ",
-		PlayCount:         14500,
-		LikesCount:        3200,
+	// Search our DB first
+	dbTracks, err := u.repo.SearchTracks(ctx, db.SearchTracksParams{
+		Column1: cleanQuery,
+		Column2: page,
 	})
 
-	// Cache search results for 30 minutes to reduce database read overhead
+	var results []*trackpb.TrackMetadata
+	if err == nil {
+		for _, t := range dbTracks {
+			results = append(results, trackToProto(t))
+		}
+	}
+
+	// If DB has fewer than 3 results, augment with YouTube search
+	if len(results) < 3 && u.ytAPIKey != "" {
+		ytTracks, err := u.searchYouTube(ctx, cleanQuery+" phonk")
+		if err == nil {
+			// Deduplicate — skip YT results already in our DB
+			existingIDs := map[string]bool{}
+			for _, r := range results {
+				existingIDs[r.OriginalYoutubeId] = true
+			}
+			for _, yt := range ytTracks {
+				if !existingIDs[yt.OriginalYoutubeId] {
+					results = append(results, yt)
+				}
+			}
+		}
+	}
+
 	if jsonBytes, err := json.Marshal(results); err == nil {
-		_ = u.rdb.Set(ctx, cacheKey, jsonBytes, 30*time.Minute).Err()
+		_ = u.rdb.Set(ctx, cacheKey, jsonBytes, 15*time.Minute).Err()
 	}
 
 	return results, nil
 }
 
+// searchYouTube queries YouTube Data API and returns TrackMetadata
+// These tracks stream via yt-dlp fallback path (no storage_url)
+func (u *trackUsecase) searchYouTube(ctx context.Context, query string) ([]*trackpb.TrackMetadata, error) {
+	url := fmt.Sprintf(
+		"https://www.googleapis.com/youtube/v3/search?part=snippet&q=%s&type=video&videoCategoryId=10&maxResults=10&key=%s",
+		strings.ReplaceAll(query, " ", "+"),
+		u.ytAPIKey,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := (&http.Client{Timeout: 8 * time.Second}).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var ytResp struct {
+		Items []struct {
+			ID struct {
+				VideoID string `json:"videoId"`
+			} `json:"id"`
+			Snippet struct {
+				Title        string `json:"title"`
+				ChannelTitle string `json:"channelTitle"`
+				Thumbnails   struct {
+					High struct {
+						URL string `json:"url"`
+					} `json:"high"`
+				} `json:"thumbnails"`
+			} `json:"snippet"`
+		} `json:"items"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&ytResp); err != nil {
+		return nil, err
+	}
+
+	var tracks []*trackpb.TrackMetadata
+	for _, item := range ytResp.Items {
+		if item.ID.VideoID == "" {
+			continue
+		}
+		tracks = append(tracks, &trackpb.TrackMetadata{
+			TrackId:           "yt-" + item.ID.VideoID,
+			Title:             item.Snippet.Title,
+			ArtistName:        item.Snippet.ChannelTitle,
+			Duration:          "00:00", // unknown until played
+			ThumbnailUrl:      item.Snippet.Thumbnails.High.URL,
+			OriginalYoutubeId: item.ID.VideoID,
+			StorageUrl:        "", // empty = yt-dlp fallback path
+			Source:            "youtube_search",
+		})
+	}
+
+	return tracks, nil
+}
+
 func (u *trackUsecase) GetTrending(ctx context.Context, limit int32) ([]*trackpb.TrackMetadata, error) {
 	cacheKey := fmt.Sprintf("catalog:trending:%d", limit)
 
-	// ⚡ REDIS BYPASS LOOKUP
 	cachedData, err := u.rdb.Get(ctx, cacheKey).Result()
 	if err == nil && cachedData != "" {
 		var cachedTracks []*trackpb.TrackMetadata
@@ -130,26 +214,17 @@ func (u *trackUsecase) GetTrending(ctx context.Context, limit int32) ([]*trackpb
 		}
 	}
 
+	// Real DB query — approved tracks ordered by play count
 	dbTracks, err := u.repo.GetTrendingTracks(ctx, limit)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("trending query failed: %w", err)
 	}
 
 	var grpcTracks []*trackpb.TrackMetadata
 	for _, t := range dbTracks {
-		grpcTracks = append(grpcTracks, &trackpb.TrackMetadata{
-			TrackId:           t.ID,
-			Title:             t.Title,
-			ArtistName:        t.ArtistName,
-			Duration:          t.Duration,
-			ThumbnailUrl:      t.ThumbnailUrl,
-			OriginalYoutubeId: t.YoutubeID,
-			PlayCount:         t.PlayCount,
-			LikesCount:        t.LikesCount,
-		})
+		grpcTracks = append(grpcTracks, trackToProto(t))
 	}
 
-	// Cache trending dashboard shelves globally for 10 minutes
 	if jsonBytes, err := json.Marshal(grpcTracks); err == nil {
 		_ = u.rdb.Set(ctx, cacheKey, jsonBytes, 10*time.Minute).Err()
 	}
@@ -285,4 +360,145 @@ func (u *trackUsecase) NewPlaylist(ctx context.Context, userID string, name stri
 
 func (u *trackUsecase) AddTrackToPlaylist(ctx context.Context, playlistID string, trackID string) error {
 	return nil
+}
+
+func (u *trackUsecase) GetForYou(ctx context.Context, limit int32) ([]*trackpb.TrackMetadata, error) {
+	cacheKey := fmt.Sprintf("foryou:%d", limit)
+	cachedData, err := u.rdb.Get(ctx, cacheKey).Result()
+	if err == nil && cachedData != "" {
+		var cached []*trackpb.TrackMetadata
+		if json.Unmarshal([]byte(cachedData), &cached) == nil {
+			return cached, nil
+		}
+	}
+
+	dbTracks, err := u.repo.GetForYouTracks(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	var tracks []*trackpb.TrackMetadata
+	for _, t := range dbTracks {
+		tracks = append(tracks, trackToProto(t))
+	}
+
+	if jsonBytes, err := json.Marshal(tracks); err == nil {
+		_ = u.rdb.Set(ctx, cacheKey, jsonBytes, 3*time.Minute).Err()
+	}
+
+	return tracks, nil
+}
+
+func (u *trackUsecase) SeedTrack(ctx context.Context, req *trackpb.SeedTrackRequest) (string, error) {
+	// Check duplicate
+	existing, _ := u.repo.GetTrackByYoutubeID(ctx, req.GetYoutubeId())
+	if existing.YoutubeID == req.GetYoutubeId() {
+		return existing.ID, nil
+	}
+
+	id := uuid.New().String()
+	_, err := u.repo.InsertTrack(ctx, db.InsertTrackParams{
+		ID:           id,
+		Title:        req.GetTitle(),
+		ArtistID:     "system",
+		ArtistName:   req.GetArtistName(),
+		Duration:     "00:00",
+		ThumbnailUrl: req.GetThumbnailUrl(),
+		YoutubeID:    req.GetYoutubeId(),
+		StorageUrl:   sql.NullString{String: req.GetStorageUrl(), Valid: req.GetStorageUrl() != ""},
+		Genre:        sql.NullString{String: req.GetGenre(), Valid: req.GetGenre() != ""},
+		Source:       "manual",
+		IsApproved:   true,
+		YtViewCount:  sql.NullInt64{Int64: 0, Valid: true},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// Invalidate trending cache
+	_ = u.rdb.Del(ctx, "catalog:trending:*").Err()
+	return id, nil
+}
+
+func (u *trackUsecase) ListTracksAdmin(ctx context.Context, page, limit int32) ([]*trackpb.TrackMetadata, int32, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	dbTracks, err := u.repo.GetAllTracksAdmin(ctx, db.GetAllTracksAdminParams{
+		Limit:  limit,
+		Offset: page * limit,
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var tracks []*trackpb.TrackMetadata
+	for _, t := range dbTracks {
+		tracks = append(tracks, trackToProto(t))
+	}
+
+	return tracks, int32(len(tracks)), nil
+}
+
+func (u *trackUsecase) ApproveTrack(ctx context.Context, trackID string) error {
+	_ = u.rdb.Del(ctx, "catalog:trending:*").Err()
+	return u.repo.ApproveTrack(ctx, trackID)
+}
+
+func (u *trackUsecase) RejectTrack(ctx context.Context, trackID string) error {
+	return u.repo.RejectTrack(ctx, trackID)
+}
+
+func (u *trackUsecase) FeatureTrack(ctx context.Context, trackID string, featured bool) error {
+	return u.repo.ToggleFeatureTrack(ctx, db.ToggleFeatureTrackParams{
+		ID:         trackID,
+		IsFeatured: featured,
+	})
+}
+
+func (u *trackUsecase) DeleteTrack(ctx context.Context, trackID string) error {
+	_ = u.rdb.Del(ctx, fmt.Sprintf("stream:%s", trackID)).Err()
+	return u.repo.DeleteTrack(ctx, trackID)
+}
+
+func (u *trackUsecase) GetAdminStats(ctx context.Context) (*trackpb.AdminStatsResponse, error) {
+	trending, err := u.repo.GetTrendingTracks(ctx, 1000)
+	if err != nil {
+		return nil, err
+	}
+
+	var totalPlays int32
+	var pendingCount int32
+	for _, t := range trending {
+		totalPlays += t.PlayCount
+		if !t.IsApproved && !t.IsRejected {
+			pendingCount++
+		}
+	}
+
+	return &trackpb.AdminStatsResponse{
+		TotalTracks:   int32(len(trending)),
+		TotalPlays:    totalPlays,
+		PendingTracks: pendingCount,
+	}, nil
+}
+
+// ─── SHARED HELPER ───────────────────────────────────────────────────────────
+
+func trackToProto(t db.Track) *trackpb.TrackMetadata {
+	return &trackpb.TrackMetadata{
+		TrackId:           t.ID,
+		Title:             t.Title,
+		ArtistName:        t.ArtistName,
+		Duration:          t.Duration,
+		ThumbnailUrl:      t.ThumbnailUrl,
+		OriginalYoutubeId: t.YoutubeID,
+		PlayCount:         t.PlayCount,
+		LikesCount:        t.LikesCount,
+		StorageUrl:        t.StorageUrl.String,
+		Genre:             t.Genre.String,
+		IsFeatured:        t.IsFeatured,
+		IsApproved:        t.IsApproved,
+		Source:            t.Source,
+	}
 }

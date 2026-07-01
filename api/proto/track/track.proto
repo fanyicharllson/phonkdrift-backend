@@ -4,118 +4,186 @@ package track;
 
 option go_package = "github.com/fanyicharllson/phonkdrift-backend/pb/track;trackpb";
 
-// Service managing track playback metadata, streaming sessions, and user interactions
 service TrackService {
-    // TRACK DISCOVERY LAYER
-    rpc SearchTrack (SearchRequest) returns (SearchResponse);
-    rpc GetStreamURL (StreamRequest) returns (StreamResponse);
-    rpc GetTrendingTracks (TrendingRequest) returns (TrendingResponse);
+  // TRACK DISCOVERY LAYER
+  rpc SearchTrack (SearchRequest) returns (SearchResponse);
+  rpc GetStreamURL (StreamRequest) returns (StreamResponse);
+  rpc GetTrendingTracks (TrendingRequest) returns (TrendingResponse);
+  rpc GetForYou (ForYouRequest) returns (ForYouResponse);
 
-    // TELEMETRY & PLAYBACK SYNC LAYER (SoundCloud Style)
-    rpc SyncPlaybackTelemetry (PlaybackTelemetryRequest) returns (PlaybackTelemetryResponse);
-    rpc GetRecentlyPlayed (RecentlyPlayedRequest) returns (RecentlyPlayedResponse);
+  // TELEMETRY & PLAYBACK SYNC LAYER
+  rpc SyncPlaybackTelemetry (PlaybackTelemetryRequest) returns (PlaybackTelemetryResponse);
+  rpc GetRecentlyPlayed (RecentlyPlayedRequest) returns (RecentlyPlayedResponse);
 
-    //  USER LIBRARY & PLAYLIST LAYER
-    rpc SetTrackInteraction (InteractionRequest) returns (InteractionResponse);
-    rpc CreatePlaylist (CreatePlaylistRequest) returns (PlaylistResponse);
-    rpc AddToPlaylist (PlaylistTrackRequest) returns (PlaylistActionResponse);
+  // USER LIBRARY & PLAYLIST LAYER
+  rpc SetTrackInteraction (InteractionRequest) returns (InteractionResponse);
+  rpc CreatePlaylist (CreatePlaylistRequest) returns (PlaylistResponse);
+  rpc AddToPlaylist (PlaylistTrackRequest) returns (PlaylistActionResponse);
+
+  //  — Admin operations
+  rpc SeedTrack (SeedTrackRequest) returns (SeedTrackResponse);
+  rpc ListTracksAdmin (ListTracksAdminRequest) returns (ListTracksAdminResponse);
+  rpc ApproveTrack (TrackActionRequest) returns (TrackActionResponse);
+  rpc RejectTrack (TrackActionRequest) returns (TrackActionResponse);
+  rpc FeatureTrack (FeatureTrackRequest) returns (TrackActionResponse);
+  rpc DeleteTrack (TrackActionRequest) returns (TrackActionResponse);
+  rpc GetAdminStats (Empty) returns (AdminStatsResponse);
 }
 
 // --- CORE DATA TYPES ---
 
+message Empty {}
+
 message TrackMetadata {
-    string track_id = 1;
-    string title = 2;
-    string artist_id = 3;
-    string artist_name = 4;
-    string duration = 5; // Format: "MM:SS"
-    string thumbnail_url = 6;
-    string original_youtube_id = 7;
-    int32 play_count = 8;
-    int32 likes_count = 9;
+  string track_id            = 1;
+  string title               = 2;
+  string artist_id           = 3;
+  string artist_name         = 4;
+  string duration            = 5;
+  string thumbnail_url       = 6;
+  string original_youtube_id = 7;
+  int32  play_count          = 8;
+  int32  likes_count         = 9;
+  string storage_url         = 10; // — DO Spaces CDN URL
+  string genre               = 11;
+  bool   is_featured         = 12;
+  bool   is_approved         = 13;
+  string source              = 14; //  — "auto" | "manual"
 }
 
-// --- DISCOVERY MESSAGES ---
+
 
 message SearchRequest {
-    string query = 1;
-    int32 page = 2;
+  string query = 1;
+  int32  page  = 2;
 }
 
 message SearchResponse {
-    repeated TrackMetadata tracks = 1;
+  repeated TrackMetadata tracks = 1;
 }
 
 message StreamRequest {
-    string track_id = 1;
-    string original_youtube_id = 2;
+  string track_id            = 1;
+  string original_youtube_id = 2;
 }
 
 message StreamResponse {
-    string stream_url = 1;
-    int64 link_expires_at = 2; // Unix timestamp
+  string stream_url      = 1;
+  int64  link_expires_at = 2;
 }
 
 message TrendingRequest {
-    int32 limit = 1;
+  int32 limit = 1;
 }
 
 message TrendingResponse {
-    repeated TrackMetadata tracks = 1;
+  repeated TrackMetadata tracks = 1;
 }
 
-// --- TELEMETRY & HISTORY MESSAGES ---
-
 message PlaybackTelemetryRequest {
-    string user_id = 1;
-    string track_id = 2;
-    int32 last_position_seconds = 3;
-    bool is_completed = 4;
+  string user_id               = 1;
+  string track_id              = 2;
+  int32  last_position_seconds = 3;
+  bool   is_completed          = 4;
 }
 
 message PlaybackTelemetryResponse {
-    bool success = 1;
+  bool success = 1;
 }
 
 message RecentlyPlayedRequest {
-    string user_id = 1;
-    int32 limit = 2;
+  string user_id = 1;
+  int32  limit   = 2;
 }
 
 message RecentlyPlayedResponse {
-    repeated TrackMetadata tracks = 1;
+  repeated TrackMetadata tracks = 1;
 }
 
-// --- INTERACTION MESSAGES ---
-
 message InteractionRequest {
-    string user_id = 1;
-    string track_id = 2;
-    bool is_liked = 3; // true = like, false = dislike
+  string user_id  = 1;
+  string track_id = 2;
+  bool   is_liked = 3;
 }
 
 message InteractionResponse {
-    bool success = 1;
+  bool success = 1;
 }
 
 message CreatePlaylistRequest {
-    string user_id = 1;
-    string name = 2;
-    string cover_image_url = 3;
+  string user_id         = 1;
+  string name            = 2;
+  string cover_image_url = 3;
 }
 
 message PlaylistResponse {
-    string playlist_id = 1;
-    string name = 2;
-    string user_id = 3;
+  string playlist_id = 1;
+  string name        = 2;
+  string user_id     = 3;
 }
 
 message PlaylistTrackRequest {
-    string playlist_id = 1;
-    string track_id = 2;
+  string playlist_id = 1;
+  string track_id    = 2;
 }
 
 message PlaylistActionResponse {
-    bool success = 1;
-    string message = 2;
+  bool   success = 1;
+  string message = 2;
+}
+
+//  — ForYou feed
+message ForYouRequest {
+  string user_id = 1;
+  int32  limit   = 2;
+}
+
+message ForYouResponse {
+  repeated TrackMetadata tracks = 1;
+}
+
+//  — Admin messages
+message SeedTrackRequest {
+  string youtube_id    = 1;
+  string title         = 2;
+  string artist_name   = 3;
+  string genre         = 4;
+  string thumbnail_url = 5;
+  string storage_url   = 6;
+}
+
+message SeedTrackResponse {
+  string track_id    = 1;
+  string storage_url = 2;
+}
+
+message ListTracksAdminRequest {
+  int32 page  = 1;
+  int32 limit = 2;
+}
+
+message ListTracksAdminResponse {
+  repeated TrackMetadata tracks = 1;
+  int32                  total  = 2;
+}
+
+message TrackActionRequest {
+  string track_id = 1;
+}
+
+message TrackActionResponse {
+  bool   success = 1;
+  string message = 2;
+}
+
+message FeatureTrackRequest {
+  string track_id    = 1;
+  bool   is_featured = 2;
+}
+
+message AdminStatsResponse {
+  int32 total_tracks   = 1;
+  int32 total_plays    = 2;
+  int32 pending_tracks = 3;
+  int32 total_users    = 4;
 }

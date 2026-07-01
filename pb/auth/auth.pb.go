@@ -782,6 +782,7 @@ type User struct {
 	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	AvatarUrl     string                 `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
 	PhonkLevel    string                 `protobuf:"bytes,5,opt,name=phonk_level,json=phonkLevel,proto3" json:"phonk_level,omitempty"`
+	IsBanned      bool                   `protobuf:"varint,6,opt,name=is_banned,json=isBanned,proto3" json:"is_banned,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -849,6 +850,13 @@ func (x *User) GetPhonkLevel() string {
 		return x.PhonkLevel
 	}
 	return ""
+}
+
+func (x *User) GetIsBanned() bool {
+	if x != nil {
+		return x.IsBanned
+	}
+	return false
 }
 
 type ForgotPasswordRequest struct {
@@ -1163,6 +1171,553 @@ func (x *VerifyResetCodeResponse) GetResetToken() string {
 	return ""
 }
 
+// — Admin Ban System
+type BanUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BanUserRequest) Reset() {
+	*x = BanUserRequest{}
+	mi := &file_auth_auth_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BanUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BanUserRequest) ProtoMessage() {}
+
+func (x *BanUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BanUserRequest.ProtoReflect.Descriptor instead.
+func (*BanUserRequest) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *BanUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *BanUserRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type BanUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BanUserResponse) Reset() {
+	*x = BanUserResponse{}
+	mi := &file_auth_auth_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BanUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BanUserResponse) ProtoMessage() {}
+
+func (x *BanUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BanUserResponse.ProtoReflect.Descriptor instead.
+func (*BanUserResponse) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *BanUserResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *BanUserResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type UnbanUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnbanUserRequest) Reset() {
+	*x = UnbanUserRequest{}
+	mi := &file_auth_auth_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnbanUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnbanUserRequest) ProtoMessage() {}
+
+func (x *UnbanUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnbanUserRequest.ProtoReflect.Descriptor instead.
+func (*UnbanUserRequest) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *UnbanUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type UnbanUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnbanUserResponse) Reset() {
+	*x = UnbanUserResponse{}
+	mi := &file_auth_auth_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnbanUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnbanUserResponse) ProtoMessage() {}
+
+func (x *UnbanUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnbanUserResponse.ProtoReflect.Descriptor instead.
+func (*UnbanUserResponse) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *UnbanUserResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *UnbanUserResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+// — FCM Push Notifications
+type PushNotificationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Body          string                 `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
+	TargetUserId  string                 `protobuf:"bytes,3,opt,name=target_user_id,json=targetUserId,proto3" json:"target_user_id,omitempty"` // empty = broadcast to all
+	DataType      string                 `protobuf:"bytes,4,opt,name=data_type,json=dataType,proto3" json:"data_type,omitempty"`               // "trending", "new_track", "chat", etc.
+	DataId        string                 `protobuf:"bytes,5,opt,name=data_id,json=dataId,proto3" json:"data_id,omitempty"`                     // ID to navigate to on tap
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PushNotificationRequest) Reset() {
+	*x = PushNotificationRequest{}
+	mi := &file_auth_auth_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PushNotificationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PushNotificationRequest) ProtoMessage() {}
+
+func (x *PushNotificationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PushNotificationRequest.ProtoReflect.Descriptor instead.
+func (*PushNotificationRequest) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *PushNotificationRequest) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *PushNotificationRequest) GetBody() string {
+	if x != nil {
+		return x.Body
+	}
+	return ""
+}
+
+func (x *PushNotificationRequest) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
+}
+
+func (x *PushNotificationRequest) GetDataType() string {
+	if x != nil {
+		return x.DataType
+	}
+	return ""
+}
+
+func (x *PushNotificationRequest) GetDataId() string {
+	if x != nil {
+		return x.DataId
+	}
+	return ""
+}
+
+type PushNotificationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	SentCount     int32                  `protobuf:"varint,2,opt,name=sent_count,json=sentCount,proto3" json:"sent_count,omitempty"`
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PushNotificationResponse) Reset() {
+	*x = PushNotificationResponse{}
+	mi := &file_auth_auth_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PushNotificationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PushNotificationResponse) ProtoMessage() {}
+
+func (x *PushNotificationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PushNotificationResponse.ProtoReflect.Descriptor instead.
+func (*PushNotificationResponse) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *PushNotificationResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *PushNotificationResponse) GetSentCount() int32 {
+	if x != nil {
+		return x.SentCount
+	}
+	return 0
+}
+
+func (x *PushNotificationResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+// FCM Token Registration (called from Flutter on login)
+type UpdateFCMTokenRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	FcmToken      string                 `protobuf:"bytes,2,opt,name=fcm_token,json=fcmToken,proto3" json:"fcm_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateFCMTokenRequest) Reset() {
+	*x = UpdateFCMTokenRequest{}
+	mi := &file_auth_auth_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateFCMTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateFCMTokenRequest) ProtoMessage() {}
+
+func (x *UpdateFCMTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateFCMTokenRequest.ProtoReflect.Descriptor instead.
+func (*UpdateFCMTokenRequest) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *UpdateFCMTokenRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UpdateFCMTokenRequest) GetFcmToken() string {
+	if x != nil {
+		return x.FcmToken
+	}
+	return ""
+}
+
+type UpdateFCMTokenResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateFCMTokenResponse) Reset() {
+	*x = UpdateFCMTokenResponse{}
+	mi := &file_auth_auth_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateFCMTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateFCMTokenResponse) ProtoMessage() {}
+
+func (x *UpdateFCMTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateFCMTokenResponse.ProtoReflect.Descriptor instead.
+func (*UpdateFCMTokenResponse) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *UpdateFCMTokenResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type GetUserStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserStatusRequest) Reset() {
+	*x = GetUserStatusRequest{}
+	mi := &file_auth_auth_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserStatusRequest) ProtoMessage() {}
+
+func (x *GetUserStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetUserStatusRequest) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *GetUserStatusRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type GetUserStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IsBanned      bool                   `protobuf:"varint,1,opt,name=is_banned,json=isBanned,proto3" json:"is_banned,omitempty"`
+	BanReason     string                 `protobuf:"bytes,2,opt,name=ban_reason,json=banReason,proto3" json:"ban_reason,omitempty"`
+	Username      string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
+	PhonkLevel    string                 `protobuf:"bytes,4,opt,name=phonk_level,json=phonkLevel,proto3" json:"phonk_level,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserStatusResponse) Reset() {
+	*x = GetUserStatusResponse{}
+	mi := &file_auth_auth_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserStatusResponse) ProtoMessage() {}
+
+func (x *GetUserStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserStatusResponse.ProtoReflect.Descriptor instead.
+func (*GetUserStatusResponse) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *GetUserStatusResponse) GetIsBanned() bool {
+	if x != nil {
+		return x.IsBanned
+	}
+	return false
+}
+
+func (x *GetUserStatusResponse) GetBanReason() string {
+	if x != nil {
+		return x.BanReason
+	}
+	return ""
+}
+
+func (x *GetUserStatusResponse) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *GetUserStatusResponse) GetPhonkLevel() string {
+	if x != nil {
+		return x.PhonkLevel
+	}
+	return ""
+}
+
 var File_auth_auth_proto protoreflect.FileDescriptor
 
 const file_auth_auth_proto_rawDesc = "" +
@@ -1218,7 +1773,7 @@ const file_auth_auth_proto_rawDesc = "" +
 	"\x15UpdateProfileResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x1e\n" +
 	"\x04user\x18\x02 \x01(\v2\n" +
-	".auth.UserR\x04user\"\x91\x01\n" +
+	".auth.UserR\x04user\"\xae\x01\n" +
 	"\x04User\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
@@ -1226,7 +1781,8 @@ const file_auth_auth_proto_rawDesc = "" +
 	"\n" +
 	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x12\x1f\n" +
 	"\vphonk_level\x18\x05 \x01(\tR\n" +
-	"phonkLevel\"-\n" +
+	"phonkLevel\x12\x1b\n" +
+	"\tis_banned\x18\x06 \x01(\bR\bisBanned\"-\n" +
 	"\x15ForgotPasswordRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"L\n" +
 	"\x16ForgotPasswordResponse\x12\x18\n" +
@@ -1245,7 +1801,43 @@ const file_auth_auth_proto_rawDesc = "" +
 	"\x17VerifyResetCodeResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x1f\n" +
 	"\vreset_token\x18\x02 \x01(\tR\n" +
-	"resetToken2\xaf\x05\n" +
+	"resetToken\"A\n" +
+	"\x0eBanUserRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"E\n" +
+	"\x0fBanUserResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"+\n" +
+	"\x10UnbanUserRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"G\n" +
+	"\x11UnbanUserResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\x9f\x01\n" +
+	"\x17PushNotificationRequest\x12\x14\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\x12\x12\n" +
+	"\x04body\x18\x02 \x01(\tR\x04body\x12$\n" +
+	"\x0etarget_user_id\x18\x03 \x01(\tR\ftargetUserId\x12\x1b\n" +
+	"\tdata_type\x18\x04 \x01(\tR\bdataType\x12\x17\n" +
+	"\adata_id\x18\x05 \x01(\tR\x06dataId\"m\n" +
+	"\x18PushNotificationResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x1d\n" +
+	"\n" +
+	"sent_count\x18\x02 \x01(\x05R\tsentCount\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"M\n" +
+	"\x15UpdateFCMTokenRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1b\n" +
+	"\tfcm_token\x18\x02 \x01(\tR\bfcmToken\"2\n" +
+	"\x16UpdateFCMTokenResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"/\n" +
+	"\x14GetUserStatusRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x90\x01\n" +
+	"\x15GetUserStatusResponse\x12\x1b\n" +
+	"\tis_banned\x18\x01 \x01(\bR\bisBanned\x12\x1d\n" +
+	"\n" +
+	"ban_reason\x18\x02 \x01(\tR\tbanReason\x12\x1a\n" +
+	"\busername\x18\x03 \x01(\tR\busername\x12\x1f\n" +
+	"\vphonk_level\x18\x04 \x01(\tR\n" +
+	"phonkLevel2\x93\b\n" +
 	"\vAuthService\x12=\n" +
 	"\fRegisterUser\x12\x15.auth.RegisterRequest\x1a\x16.auth.RegisterResponse\x124\n" +
 	"\tLoginUser\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\x12H\n" +
@@ -1258,7 +1850,12 @@ const file_auth_auth_proto_rawDesc = "" +
 	"\rUpdateProfile\x12\x1a.auth.UpdateProfileRequest\x1a\x1b.auth.UpdateProfileResponse\x12K\n" +
 	"\x0eForgotPassword\x12\x1b.auth.ForgotPasswordRequest\x1a\x1c.auth.ForgotPasswordResponse\x12H\n" +
 	"\rResetPassword\x12\x1a.auth.ResetPasswordRequest\x1a\x1b.auth.ResetPasswordResponse\x12N\n" +
-	"\x0fVerifyResetCode\x12\x1c.auth.VerifyResetCodeRequest\x1a\x1d.auth.VerifyResetCodeResponseB=Z;github.com/fanyicharllson/phonkdrift-backend/pb/auth;authpbb\x06proto3"
+	"\x0fVerifyResetCode\x12\x1c.auth.VerifyResetCodeRequest\x1a\x1d.auth.VerifyResetCodeResponse\x126\n" +
+	"\aBanUser\x12\x14.auth.BanUserRequest\x1a\x15.auth.BanUserResponse\x12<\n" +
+	"\tUnbanUser\x12\x16.auth.UnbanUserRequest\x1a\x17.auth.UnbanUserResponse\x12U\n" +
+	"\x14SendPushNotification\x12\x1d.auth.PushNotificationRequest\x1a\x1e.auth.PushNotificationResponse\x12K\n" +
+	"\x0eUpdateFCMToken\x12\x1b.auth.UpdateFCMTokenRequest\x1a\x1c.auth.UpdateFCMTokenResponse\x12H\n" +
+	"\rGetUserStatus\x12\x1a.auth.GetUserStatusRequest\x1a\x1b.auth.GetUserStatusResponseB=Z;github.com/fanyicharllson/phonkdrift-backend/pb/auth;authpbb\x06proto3"
 
 var (
 	file_auth_auth_proto_rawDescOnce sync.Once
@@ -1272,29 +1869,39 @@ func file_auth_auth_proto_rawDescGZIP() []byte {
 	return file_auth_auth_proto_rawDescData
 }
 
-var file_auth_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_auth_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_auth_auth_proto_goTypes = []any{
-	(*RegisterRequest)(nil),         // 0: auth.RegisterRequest
-	(*RegisterResponse)(nil),        // 1: auth.RegisterResponse
-	(*VerifyRequest)(nil),           // 2: auth.VerifyRequest
-	(*VerifyResponse)(nil),          // 3: auth.VerifyResponse
-	(*LoginRequest)(nil),            // 4: auth.LoginRequest
-	(*LoginResponse)(nil),           // 5: auth.LoginResponse
-	(*ValidateTokenRequest)(nil),    // 6: auth.ValidateTokenRequest
-	(*ValidateTokenResponse)(nil),   // 7: auth.ValidateTokenResponse
-	(*ResendCodeRequest)(nil),       // 8: auth.ResendCodeRequest
-	(*ResendCodeResponse)(nil),      // 9: auth.ResendCodeResponse
-	(*GetUserRequest)(nil),          // 10: auth.GetUserRequest
-	(*GetUserResponse)(nil),         // 11: auth.GetUserResponse
-	(*UpdateProfileRequest)(nil),    // 12: auth.UpdateProfileRequest
-	(*UpdateProfileResponse)(nil),   // 13: auth.UpdateProfileResponse
-	(*User)(nil),                    // 14: auth.User
-	(*ForgotPasswordRequest)(nil),   // 15: auth.ForgotPasswordRequest
-	(*ForgotPasswordResponse)(nil),  // 16: auth.ForgotPasswordResponse
-	(*ResetPasswordRequest)(nil),    // 17: auth.ResetPasswordRequest
-	(*ResetPasswordResponse)(nil),   // 18: auth.ResetPasswordResponse
-	(*VerifyResetCodeRequest)(nil),  // 19: auth.VerifyResetCodeRequest
-	(*VerifyResetCodeResponse)(nil), // 20: auth.VerifyResetCodeResponse
+	(*RegisterRequest)(nil),          // 0: auth.RegisterRequest
+	(*RegisterResponse)(nil),         // 1: auth.RegisterResponse
+	(*VerifyRequest)(nil),            // 2: auth.VerifyRequest
+	(*VerifyResponse)(nil),           // 3: auth.VerifyResponse
+	(*LoginRequest)(nil),             // 4: auth.LoginRequest
+	(*LoginResponse)(nil),            // 5: auth.LoginResponse
+	(*ValidateTokenRequest)(nil),     // 6: auth.ValidateTokenRequest
+	(*ValidateTokenResponse)(nil),    // 7: auth.ValidateTokenResponse
+	(*ResendCodeRequest)(nil),        // 8: auth.ResendCodeRequest
+	(*ResendCodeResponse)(nil),       // 9: auth.ResendCodeResponse
+	(*GetUserRequest)(nil),           // 10: auth.GetUserRequest
+	(*GetUserResponse)(nil),          // 11: auth.GetUserResponse
+	(*UpdateProfileRequest)(nil),     // 12: auth.UpdateProfileRequest
+	(*UpdateProfileResponse)(nil),    // 13: auth.UpdateProfileResponse
+	(*User)(nil),                     // 14: auth.User
+	(*ForgotPasswordRequest)(nil),    // 15: auth.ForgotPasswordRequest
+	(*ForgotPasswordResponse)(nil),   // 16: auth.ForgotPasswordResponse
+	(*ResetPasswordRequest)(nil),     // 17: auth.ResetPasswordRequest
+	(*ResetPasswordResponse)(nil),    // 18: auth.ResetPasswordResponse
+	(*VerifyResetCodeRequest)(nil),   // 19: auth.VerifyResetCodeRequest
+	(*VerifyResetCodeResponse)(nil),  // 20: auth.VerifyResetCodeResponse
+	(*BanUserRequest)(nil),           // 21: auth.BanUserRequest
+	(*BanUserResponse)(nil),          // 22: auth.BanUserResponse
+	(*UnbanUserRequest)(nil),         // 23: auth.UnbanUserRequest
+	(*UnbanUserResponse)(nil),        // 24: auth.UnbanUserResponse
+	(*PushNotificationRequest)(nil),  // 25: auth.PushNotificationRequest
+	(*PushNotificationResponse)(nil), // 26: auth.PushNotificationResponse
+	(*UpdateFCMTokenRequest)(nil),    // 27: auth.UpdateFCMTokenRequest
+	(*UpdateFCMTokenResponse)(nil),   // 28: auth.UpdateFCMTokenResponse
+	(*GetUserStatusRequest)(nil),     // 29: auth.GetUserStatusRequest
+	(*GetUserStatusResponse)(nil),    // 30: auth.GetUserStatusResponse
 }
 var file_auth_auth_proto_depIdxs = []int32{
 	14, // 0: auth.ValidateTokenResponse.user:type_name -> auth.User
@@ -1310,18 +1917,28 @@ var file_auth_auth_proto_depIdxs = []int32{
 	15, // 10: auth.AuthService.ForgotPassword:input_type -> auth.ForgotPasswordRequest
 	17, // 11: auth.AuthService.ResetPassword:input_type -> auth.ResetPasswordRequest
 	19, // 12: auth.AuthService.VerifyResetCode:input_type -> auth.VerifyResetCodeRequest
-	1,  // 13: auth.AuthService.RegisterUser:output_type -> auth.RegisterResponse
-	5,  // 14: auth.AuthService.LoginUser:output_type -> auth.LoginResponse
-	7,  // 15: auth.AuthService.ValidateToken:output_type -> auth.ValidateTokenResponse
-	3,  // 16: auth.AuthService.VerifyCode:output_type -> auth.VerifyResponse
-	9,  // 17: auth.AuthService.ResendCode:output_type -> auth.ResendCodeResponse
-	11, // 18: auth.AuthService.GetUser:output_type -> auth.GetUserResponse
-	13, // 19: auth.AuthService.UpdateProfile:output_type -> auth.UpdateProfileResponse
-	16, // 20: auth.AuthService.ForgotPassword:output_type -> auth.ForgotPasswordResponse
-	18, // 21: auth.AuthService.ResetPassword:output_type -> auth.ResetPasswordResponse
-	20, // 22: auth.AuthService.VerifyResetCode:output_type -> auth.VerifyResetCodeResponse
-	13, // [13:23] is the sub-list for method output_type
-	3,  // [3:13] is the sub-list for method input_type
+	21, // 13: auth.AuthService.BanUser:input_type -> auth.BanUserRequest
+	23, // 14: auth.AuthService.UnbanUser:input_type -> auth.UnbanUserRequest
+	25, // 15: auth.AuthService.SendPushNotification:input_type -> auth.PushNotificationRequest
+	27, // 16: auth.AuthService.UpdateFCMToken:input_type -> auth.UpdateFCMTokenRequest
+	29, // 17: auth.AuthService.GetUserStatus:input_type -> auth.GetUserStatusRequest
+	1,  // 18: auth.AuthService.RegisterUser:output_type -> auth.RegisterResponse
+	5,  // 19: auth.AuthService.LoginUser:output_type -> auth.LoginResponse
+	7,  // 20: auth.AuthService.ValidateToken:output_type -> auth.ValidateTokenResponse
+	3,  // 21: auth.AuthService.VerifyCode:output_type -> auth.VerifyResponse
+	9,  // 22: auth.AuthService.ResendCode:output_type -> auth.ResendCodeResponse
+	11, // 23: auth.AuthService.GetUser:output_type -> auth.GetUserResponse
+	13, // 24: auth.AuthService.UpdateProfile:output_type -> auth.UpdateProfileResponse
+	16, // 25: auth.AuthService.ForgotPassword:output_type -> auth.ForgotPasswordResponse
+	18, // 26: auth.AuthService.ResetPassword:output_type -> auth.ResetPasswordResponse
+	20, // 27: auth.AuthService.VerifyResetCode:output_type -> auth.VerifyResetCodeResponse
+	22, // 28: auth.AuthService.BanUser:output_type -> auth.BanUserResponse
+	24, // 29: auth.AuthService.UnbanUser:output_type -> auth.UnbanUserResponse
+	26, // 30: auth.AuthService.SendPushNotification:output_type -> auth.PushNotificationResponse
+	28, // 31: auth.AuthService.UpdateFCMToken:output_type -> auth.UpdateFCMTokenResponse
+	30, // 32: auth.AuthService.GetUserStatus:output_type -> auth.GetUserStatusResponse
+	18, // [18:33] is the sub-list for method output_type
+	3,  // [3:18] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
 	3,  // [3:3] is the sub-list for extension extendee
 	0,  // [0:3] is the sub-list for field type_name
@@ -1338,7 +1955,7 @@ func file_auth_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_auth_proto_rawDesc), len(file_auth_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

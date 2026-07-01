@@ -155,7 +155,65 @@ func mapSQLCUser(user db.User) *domain.User {
 		AvatarURL:    user.AvatarUrl.String,
 		PhonkLevel:   user.PhonkLevel.String,
 		IsVerified:   user.IsVerified.Bool,
-		CreatedAt:    user.CreatedAt.Time,
-		UpdatedAt:    user.UpdatedAt.Time,
+		IsBanned:     user.IsBanned,
+		BanReason: func() string {
+			if user.BanReason.Valid {
+				return user.BanReason.String
+			}
+			return ""
+		}(),
+		FCMToken: func() string {
+			if user.FcmToken.Valid {
+				return user.FcmToken.String
+			}
+			return ""
+		}(),
+		// FCMToken:  user.FcmToken.String,
+		CreatedAt: user.CreatedAt.Time,
+		UpdatedAt: user.UpdatedAt.Time,
 	}
+}
+
+func (r *authRepository) BanUser(ctx context.Context, userID, reason string) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return fmt.Errorf("invalid user id: %w", err)
+	}
+	return r.queries.BanUser(ctx, db.BanUserParams{
+		ID:        uid,
+		BanReason: sql.NullString{String: reason, Valid: reason != ""},
+	})
+}
+
+func (r *authRepository) UnbanUser(ctx context.Context, userID string) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return fmt.Errorf("invalid user id: %w", err)
+	}
+	return r.queries.UnbanUser(ctx, uid)
+}
+
+func (r *authRepository) UpdateFCMToken(ctx context.Context, userID, fcmToken string) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return fmt.Errorf("invalid user id: %w", err)
+	}
+	return r.queries.UpdateFCMToken(ctx, db.UpdateFCMTokenParams{
+		ID:       uid,
+		FcmToken: sql.NullString{String: fcmToken, Valid: fcmToken != ""},
+	})
+}
+
+func (r *authRepository) GetAllFCMTokens(ctx context.Context) ([]string, error) {
+	rows, err := r.queries.GetUserFCMTokens(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var tokens []string
+	for _, row := range rows {
+		if row.Valid && row.String != "" {
+			tokens = append(tokens, row.String)
+		}
+	}
+	return tokens, nil
 }
