@@ -172,8 +172,39 @@ func (h *AuthGRPCHandler) VerifyResetCode(ctx context.Context, req *authpb.Verif
 	}, nil
 }
 
+func bearerTokenFromContext(ctx context.Context) string {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ""
+	}
+
+	for _, value := range md.Get("authorization") {
+		parts := strings.Fields(strings.TrimSpace(value))
+		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+			return parts[1]
+		}
+	}
+
+	return ""
+}
+
+func userToProto(user *domain.User) *authpb.User {
+	if user == nil {
+		return nil
+	}
+
+	return &authpb.User{
+		UserId:     user.ID,
+		Username:   user.Username,
+		Email:      user.Email,
+		AvatarUrl:  user.AvatarURL,
+		PhonkLevel: user.PhonkLevel,
+		IsBanned:   user.IsBanned,
+	}
+}
+
 // ==========================================
-// 🔨 4. ADMIN OPERATIONS
+//  ADMIN OPERATIONS
 // ==========================================
 
 func (h *AuthGRPCHandler) BanUser(ctx context.Context, req *authpb.BanUserRequest) (*authpb.BanUserResponse, error) {
@@ -212,33 +243,15 @@ func (h *AuthGRPCHandler) UpdateFCMToken(ctx context.Context, req *authpb.Update
 	return &authpb.UpdateFCMTokenResponse{Success: true}, nil
 }
 
-func bearerTokenFromContext(ctx context.Context) string {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return ""
+func (h *AuthGRPCHandler) GetUserStatus(ctx context.Context, req *authpb.GetUserStatusRequest) (*authpb.GetUserStatusResponse, error) {
+	user, err := h.useCase.GetUser(ctx, req.GetUserId())
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
 	}
-
-	for _, value := range md.Get("authorization") {
-		parts := strings.Fields(strings.TrimSpace(value))
-		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
-			return parts[1]
-		}
-	}
-
-	return ""
-}
-
-func userToProto(user *domain.User) *authpb.User {
-	if user == nil {
-		return nil
-	}
-
-	return &authpb.User{
-		UserId:     user.ID,
+	return &authpb.GetUserStatusResponse{
+		IsBanned:   user.IsBanned,
+		BanReason:  user.BanReason,
 		Username:   user.Username,
-		Email:      user.Email,
-		AvatarUrl:  user.AvatarURL,
 		PhonkLevel: user.PhonkLevel,
-		IsBanned:   user.IsBanned, // ✅ NEW
-	}
+	}, nil
 }

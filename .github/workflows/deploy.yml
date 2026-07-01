@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         # 🔥 Parallel multi-architecture compilation layer for your active services
-        service: [api-gateway, auth-service, track-service, notification-service]
+        service: [api-gateway, auth-service, track-service, discovery-service, notification-service]
         # chat-service coming soon placeholder: [api-gateway, auth-service, track-service, notification-service, chat-service]
     steps:
       - name: Checkout Source Code
