@@ -12,16 +12,24 @@ COPY . .
 # Compile the static Linux binary
 RUN CGO_ENABLED=0 GOOS=linux go build -o track-service ./cmd/track-service/main.go
 
-# Stage 2: Final lightweight runtime environment
+# Stage 2: Runtime with yt-dlp
 FROM alpine:3.19
 WORKDIR /app
 
-# Install runtime dependencies for the audio extractor engine
-RUN apk add --no-cache ffmpeg python3 nodejs curl
+# Install yt-dlp + ffmpeg (needed for audio extraction/conversion)
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    ffmpeg \
+    curl \
+    ca-certificates \
+    nodejs \          
+    npm  
 
-# Download and authorize the latest version of yt-dlp
-RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
-    chmod a+rx /usr/local/bin/yt-dlp
+RUN pip3 install --break-system-packages yt-dlp
+
+# Tell yt-dlp to use nodejs as JS runtime
+ENV YT_DLP_JS_RUNTIME=nodejs
 
 # Copy compiled executable binary from build manager stage
 COPY --from=builder /app/track-service .

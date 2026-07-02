@@ -57,7 +57,9 @@ func (u *Uploader) DownloadAndUpload(ctx context.Context, youtubeID string) (str
 		"--extract-audio",
 		"--audio-format", "mp3",
 		"--audio-quality", "0",
-		"-o", "-", // output to stdout
+		"--js-runtimes", "nodejs", 
+		"--no-playlist",
+		"-o", "-",
 		videoURL,
 	)
 

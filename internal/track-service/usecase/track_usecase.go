@@ -74,7 +74,14 @@ func (u *trackUsecase) GetAudioStream(ctx context.Context, youtubeID string) (st
 
 	// 🐌 Fallback: yt-dlp for tracks not yet in storage (legacy path)
 	videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", youtubeID)
-	cmd := exec.CommandContext(ctx, "yt-dlp", "-f", "bestaudio", "-g", videoURL)
+	args := []string{
+		"-f", "bestaudio",
+		"-g",
+		"--js-runtimes", "nodejs",
+		"--no-playlist",
+		videoURL,
+	}
+	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
 	var out, stderr bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr

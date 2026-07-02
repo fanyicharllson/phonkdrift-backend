@@ -20,6 +20,10 @@ RUN apk add --no-cache \
 
 RUN pip3 install --break-system-packages yt-dlp
 
+# Tell yt-dlp to use nodejs as JS runtime
+ENV YT_DLP_JS_RUNTIME=nodejs
+
+
 COPY --from=builder /app/api-gateway .
 
 # Expose ports for both mobile gRPC traffic and HTTP Postman testing

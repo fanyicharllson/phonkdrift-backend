@@ -22,6 +22,9 @@ RUN apk add --no-cache \
 
 RUN pip3 install --break-system-packages yt-dlp
 
+# Tell yt-dlp to use nodejs as JS runtime
+ENV YT_DLP_JS_RUNTIME=nodejs
+
 COPY --from=builder /app/discovery-service .
 
 CMD ["./discovery-service"]
