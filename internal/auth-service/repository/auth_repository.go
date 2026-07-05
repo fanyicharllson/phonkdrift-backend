@@ -204,6 +204,10 @@ func (r *authRepository) UpdateFCMToken(ctx context.Context, userID, fcmToken st
 	})
 }
 
+func (r *authRepository) CountUsers(ctx context.Context) (int64, error) {
+	return r.queries.CountUsers(ctx)
+}
+
 func (r *authRepository) GetAllFCMTokens(ctx context.Context) ([]string, error) {
 	rows, err := r.queries.GetUserFCMTokens(ctx)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os/exec"
@@ -17,6 +18,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// ErrPlaylistAccessDenied is returned when the requester doesn't own a
+// playlist they're trying to view (while private) or modify.
+var ErrPlaylistAccessDenied = errors.New("playlist access denied")
+
 type TrackUsecase interface {
 	GetAudioStream(ctx context.Context, youtubeID string) (string, int64, error)
 	SyncTelemetry(ctx context.Context, userID string, trackID string, pos int32, completed bool) error
@@ -25,7 +30,9 @@ type TrackUsecase interface {
 	GetRecentHistory(ctx context.Context, userID string, limit int32) ([]*trackpb.TrackMetadata, error)
 	SetInteraction(ctx context.Context, userID string, trackID string, isLiked bool) error
 	NewPlaylist(ctx context.Context, userID string, name string, coverURL string) (*trackpb.PlaylistResponse, error)
-	AddTrackToPlaylist(ctx context.Context, playlistID string, trackID string) error
+	AddTrackToPlaylist(ctx context.Context, playlistID string, trackID string, requesterID string) error
+	GetPlaylist(ctx context.Context, playlistID string, requesterID string) (*trackpb.GetPlaylistResponse, error)
+	GetUserPlaylists(ctx context.Context, userID string) ([]*trackpb.PlaylistSummary, error)
 	GetForYou(ctx context.Context, limit int32) ([]*trackpb.TrackMetadata, error)
 	SeedTrack(ctx context.Context, req *trackpb.SeedTrackRequest) (string, error)
 	ListTracksAdmin(ctx context.Context, page, limit int32) ([]*trackpb.TrackMetadata, int32, error)
@@ -34,6 +41,7 @@ type TrackUsecase interface {
 	FeatureTrack(ctx context.Context, trackID string, featured bool) error
 	DeleteTrack(ctx context.Context, trackID string) error
 	GetAdminStats(ctx context.Context) (*trackpb.AdminStatsResponse, error)
+	GetLikedTracks(ctx context.Context, userID string, limit int32, page int32) ([]*trackpb.TrackMetadata, error)
 }
 
 type trackUsecase struct {
@@ -270,7 +278,7 @@ func (u *trackUsecase) SyncTelemetry(ctx context.Context, userID string, trackID
 			TrackID:          trackID,
 		})
 		// Invalidate trending cache shelves since play counter data shifted metrics
-		_ = u.rdb.Del(ctx, "catalog:trending:*").Err()
+		u.invalidateCachePattern(ctx, "catalog:trending:*")
 	}
 
 	return err
@@ -348,7 +356,8 @@ func (u *trackUsecase) SetInteraction(ctx context.Context, userID string, trackI
 	}
 
 	// Clear global trending caches since engagement counters shifted position balances
-	_ = u.rdb.Del(ctx, "catalog:trending:*").Err()
+	u.invalidateCachePattern(ctx, "catalog:trending:*")
+	u.invalidateCachePattern(ctx, fmt.Sprintf("user:liked:%s:*", userID))
 
 	return u.repo.UpdateTrackStats(ctx, db.UpdateTrackStatsParams{
 		PlayCountChange:  0,
@@ -358,15 +367,105 @@ func (u *trackUsecase) SetInteraction(ctx context.Context, userID string, trackI
 }
 
 func (u *trackUsecase) NewPlaylist(ctx context.Context, userID string, name string, coverURL string) (*trackpb.PlaylistResponse, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user uuid: %w", err)
+	}
+
+	playlist, err := u.repo.CreatePlaylist(ctx, db.CreatePlaylistParams{
+		UserID:        userUUID,
+		Name:          name,
+		CoverImageUrl: sql.NullString{String: coverURL, Valid: coverURL != ""},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create playlist: %w", err)
+	}
+
 	return &trackpb.PlaylistResponse{
-		PlaylistId: uuid.New().String(),
-		Name:       name,
-		UserId:     userID,
+		PlaylistId:    playlist.ID.String(),
+		Name:          playlist.Name,
+		UserId:        playlist.UserID.String(),
+		CoverImageUrl: playlist.CoverImageUrl.String,
 	}, nil
 }
 
-func (u *trackUsecase) AddTrackToPlaylist(ctx context.Context, playlistID string, trackID string) error {
-	return nil
+func (u *trackUsecase) AddTrackToPlaylist(ctx context.Context, playlistID string, trackID string, requesterID string) error {
+	playlistUUID, err := uuid.Parse(playlistID)
+	if err != nil {
+		return fmt.Errorf("invalid playlist uuid: %w", err)
+	}
+
+	playlist, err := u.repo.GetPlaylistByID(ctx, playlistUUID)
+	if err != nil {
+		return fmt.Errorf("playlist not found: %w", err)
+	}
+	if playlist.UserID.String() != requesterID {
+		return ErrPlaylistAccessDenied
+	}
+
+	return u.repo.AddTrackToPlaylist(ctx, db.AddTrackToPlaylistParams{
+		PlaylistID: playlistUUID,
+		TrackID:    trackID,
+	})
+}
+
+func (u *trackUsecase) GetPlaylist(ctx context.Context, playlistID string, requesterID string) (*trackpb.GetPlaylistResponse, error) {
+	playlistUUID, err := uuid.Parse(playlistID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid playlist uuid: %w", err)
+	}
+
+	playlist, err := u.repo.GetPlaylistByID(ctx, playlistUUID)
+	if err != nil {
+		return nil, fmt.Errorf("playlist not found: %w", err)
+	}
+	if playlist.IsPrivate && playlist.UserID.String() != requesterID {
+		return nil, ErrPlaylistAccessDenied
+	}
+
+	dbTracks, err := u.repo.GetPlaylistTracks(ctx, playlistUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch playlist tracks: %w", err)
+	}
+
+	var tracks []*trackpb.TrackMetadata
+	for _, t := range dbTracks {
+		tracks = append(tracks, trackToProto(t))
+	}
+
+	return &trackpb.GetPlaylistResponse{
+		PlaylistId:    playlist.ID.String(),
+		Name:          playlist.Name,
+		UserId:        playlist.UserID.String(),
+		CoverImageUrl: playlist.CoverImageUrl.String,
+		IsPrivate:     playlist.IsPrivate,
+		Tracks:        tracks,
+	}, nil
+}
+
+func (u *trackUsecase) GetUserPlaylists(ctx context.Context, userID string) ([]*trackpb.PlaylistSummary, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user uuid: %w", err)
+	}
+
+	rows, err := u.repo.GetUserPlaylists(ctx, userUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user playlists: %w", err)
+	}
+
+	var playlists []*trackpb.PlaylistSummary
+	for _, row := range rows {
+		playlists = append(playlists, &trackpb.PlaylistSummary{
+			PlaylistId:    row.ID.String(),
+			Name:          row.Name,
+			CoverImageUrl: row.CoverImageUrl.String,
+			IsPrivate:     row.IsPrivate,
+			TrackCount:    int32(row.TrackCount),
+		})
+	}
+
+	return playlists, nil
 }
 
 func (u *trackUsecase) GetForYou(ctx context.Context, limit int32) ([]*trackpb.TrackMetadata, error) {
@@ -488,6 +587,59 @@ func (u *trackUsecase) GetAdminStats(ctx context.Context) (*trackpb.AdminStatsRe
 		TotalPlays:    totalPlays,
 		PendingTracks: pendingCount,
 	}, nil
+}
+
+func (u *trackUsecase) GetLikedTracks(ctx context.Context, userID string, limit int32, page int32) ([]*trackpb.TrackMetadata, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user uuid: %w", err)
+	}
+
+	cacheKey := fmt.Sprintf("user:liked:%s:p%d", userID, page)
+	cachedData, err := u.rdb.Get(ctx, cacheKey).Result()
+	if err == nil && cachedData != "" {
+		var cached []*trackpb.TrackMetadata
+		if json.Unmarshal([]byte(cachedData), &cached) == nil {
+			return cached, nil
+		}
+	}
+
+	if limit <= 0 {
+		limit = 20
+	}
+
+	dbTracks, err := u.repo.GetLikedTracks(ctx, db.GetLikedTracksParams{
+		UserID:  userUUID,
+		Limit:   limit,
+		Column3: page,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch liked tracks: %w", err)
+	}
+
+	var tracks []*trackpb.TrackMetadata
+	for _, t := range dbTracks {
+		tracks = append(tracks, trackToProto(t))
+	}
+
+	if jsonBytes, err := json.Marshal(tracks); err == nil {
+		_ = u.rdb.Set(ctx, cacheKey, jsonBytes, 5*time.Minute).Err()
+	}
+
+	return tracks, nil
+}
+
+// invalidateCachePattern deletes all Redis keys matching a glob pattern.
+// Redis DEL only accepts exact key names, so matching keys must be discovered via SCAN first.
+func (u *trackUsecase) invalidateCachePattern(ctx context.Context, pattern string) {
+	var keys []string
+	iter := u.rdb.Scan(ctx, 0, pattern, 0).Iterator()
+	for iter.Next(ctx) {
+		keys = append(keys, iter.Val())
+	}
+	if len(keys) > 0 {
+		_ = u.rdb.Del(ctx, keys...).Err()
+	}
 }
 
 // ─── SHARED HELPER ───────────────────────────────────────────────────────────

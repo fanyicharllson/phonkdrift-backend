@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/fanyicharllson/phonkdrift-backend/internal/track-service/usecase"
@@ -133,8 +134,11 @@ func (h *TrackGRPCHandler) CreatePlaylist(ctx context.Context, req *trackpb.Crea
 }
 
 func (h *TrackGRPCHandler) AddToPlaylist(ctx context.Context, req *trackpb.PlaylistTrackRequest) (*trackpb.PlaylistActionResponse, error) {
-	err := h.usecase.AddTrackToPlaylist(ctx, req.GetPlaylistId(), req.GetTrackId())
+	err := h.usecase.AddTrackToPlaylist(ctx, req.GetPlaylistId(), req.GetTrackId(), req.GetUserId())
 	if err != nil {
+		if errors.Is(err, usecase.ErrPlaylistAccessDenied) {
+			return nil, status.Error(codes.PermissionDenied, "you do not own this playlist")
+		}
 		return nil, status.Errorf(codes.Internal, "failed to append track to collection: %v", err)
 	}
 
@@ -142,6 +146,33 @@ func (h *TrackGRPCHandler) AddToPlaylist(ctx context.Context, req *trackpb.Playl
 		Success: true,
 		Message: "Track successfully appended to playlist",
 	}, nil
+}
+
+func (h *TrackGRPCHandler) GetPlaylist(ctx context.Context, req *trackpb.GetPlaylistRequest) (*trackpb.GetPlaylistResponse, error) {
+	if req.GetPlaylistId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "playlist_id is required")
+	}
+
+	res, err := h.usecase.GetPlaylist(ctx, req.GetPlaylistId(), req.GetUserId())
+	if err != nil {
+		if errors.Is(err, usecase.ErrPlaylistAccessDenied) {
+			return nil, status.Error(codes.PermissionDenied, "this playlist is private")
+		}
+		return nil, status.Errorf(codes.Internal, "failed to fetch playlist: %v", err)
+	}
+	return res, nil
+}
+
+func (h *TrackGRPCHandler) GetUserPlaylists(ctx context.Context, req *trackpb.GetUserPlaylistsRequest) (*trackpb.GetUserPlaylistsResponse, error) {
+	if req.GetUserId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	playlists, err := h.usecase.GetUserPlaylists(ctx, req.GetUserId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch user playlists: %v", err)
+	}
+	return &trackpb.GetUserPlaylistsResponse{Playlists: playlists}, nil
 }
 
 // ==========================================
@@ -217,4 +248,23 @@ func (h *TrackGRPCHandler) GetAdminStats(ctx context.Context, _ *trackpb.Empty) 
 		return nil, status.Errorf(codes.Internal, "stats fetch failed: %v", err)
 	}
 	return stats, nil
+}
+
+func (h *TrackGRPCHandler) GetLikedTracks(ctx context.Context, req *trackpb.GetLikedTracksRequest) (*trackpb.GetLikedTracksResponse, error) {
+	if req.GetUserId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+	limit := req.GetLimit()
+	if limit <= 0 {
+		limit = 20
+	}
+
+	tracks, err := h.usecase.GetLikedTracks(ctx, req.GetUserId(), limit, req.GetPage())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch liked tracks: %v", err)
+	}
+	return &trackpb.GetLikedTracksResponse{
+		Tracks: tracks,
+		Total:  int32(len(tracks)),
+	}, nil
 }

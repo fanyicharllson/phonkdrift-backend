@@ -63,5 +63,8 @@ WHERE id = $1;
 UPDATE users SET fcm_token = $2 WHERE id = $1;
 
 -- name: GetUserFCMTokens :many
-SELECT fcm_token FROM users 
+SELECT fcm_token FROM users
 WHERE is_banned = false AND fcm_token IS NOT NULL AND fcm_token != '';
+
+-- name: CountUsers :one
+SELECT COUNT(*) FROM users;

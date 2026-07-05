@@ -13,6 +13,22 @@ import (
 	"github.com/google/uuid"
 )
 
+const addTrackToPlaylist = `-- name: AddTrackToPlaylist :exec
+INSERT INTO playlist_tracks (playlist_id, track_id)
+VALUES ($1, $2)
+ON CONFLICT (playlist_id, track_id) DO NOTHING
+`
+
+type AddTrackToPlaylistParams struct {
+	PlaylistID uuid.UUID `json:"playlist_id"`
+	TrackID    string    `json:"track_id"`
+}
+
+func (q *Queries) AddTrackToPlaylist(ctx context.Context, arg AddTrackToPlaylistParams) error {
+	_, err := q.db.ExecContext(ctx, addTrackToPlaylist, arg.PlaylistID, arg.TrackID)
+	return err
+}
+
 const approveTrack = `-- name: ApproveTrack :exec
 UPDATE tracks SET is_approved = true, is_rejected = false WHERE id = $1
 `
@@ -20,6 +36,32 @@ UPDATE tracks SET is_approved = true, is_rejected = false WHERE id = $1
 func (q *Queries) ApproveTrack(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, approveTrack, id)
 	return err
+}
+
+const createPlaylist = `-- name: CreatePlaylist :one
+INSERT INTO playlists (user_id, name, cover_image_url)
+VALUES ($1, $2, $3)
+RETURNING id, user_id, name, cover_image_url, is_private, created_at
+`
+
+type CreatePlaylistParams struct {
+	UserID        uuid.UUID      `json:"user_id"`
+	Name          string         `json:"name"`
+	CoverImageUrl sql.NullString `json:"cover_image_url"`
+}
+
+func (q *Queries) CreatePlaylist(ctx context.Context, arg CreatePlaylistParams) (Playlist, error) {
+	row := q.db.QueryRowContext(ctx, createPlaylist, arg.UserID, arg.Name, arg.CoverImageUrl)
+	var i Playlist
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.CoverImageUrl,
+		&i.IsPrivate,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const deleteTrack = `-- name: DeleteTrack :exec
@@ -154,6 +196,129 @@ LIMIT $1
 
 func (q *Queries) GetForYouTracks(ctx context.Context, limit int32) ([]Track, error) {
 	rows, err := q.db.QueryContext(ctx, getForYouTracks, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Track
+	for rows.Next() {
+		var i Track
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.ArtistID,
+			&i.ArtistName,
+			&i.Duration,
+			&i.ThumbnailUrl,
+			&i.YoutubeID,
+			&i.PlayCount,
+			&i.LikesCount,
+			&i.CreatedAt,
+			&i.StorageUrl,
+			&i.Genre,
+			&i.IsFeatured,
+			&i.IsApproved,
+			&i.IsRejected,
+			&i.Source,
+			&i.YtViewCount,
+			&i.FcmNotified,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getLikedTracks = `-- name: GetLikedTracks :many
+SELECT t.id, t.title, t.artist_id, t.artist_name, t.duration, t.thumbnail_url, t.youtube_id, t.play_count, t.likes_count, t.created_at, t.storage_url, t.genre, t.is_featured, t.is_approved, t.is_rejected, t.source, t.yt_view_count, t.fcm_notified FROM tracks t
+INNER JOIN track_interactions ti ON t.id = ti.track_id
+WHERE ti.user_id = $1 AND ti.is_liked = true
+ORDER BY ti.interacted_at DESC
+LIMIT $2 OFFSET ($3::int * $2)
+`
+
+type GetLikedTracksParams struct {
+	UserID  uuid.UUID `json:"user_id"`
+	Limit   int32     `json:"limit"`
+	Column3 int32     `json:"column_3"`
+}
+
+func (q *Queries) GetLikedTracks(ctx context.Context, arg GetLikedTracksParams) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, getLikedTracks, arg.UserID, arg.Limit, arg.Column3)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Track
+	for rows.Next() {
+		var i Track
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.ArtistID,
+			&i.ArtistName,
+			&i.Duration,
+			&i.ThumbnailUrl,
+			&i.YoutubeID,
+			&i.PlayCount,
+			&i.LikesCount,
+			&i.CreatedAt,
+			&i.StorageUrl,
+			&i.Genre,
+			&i.IsFeatured,
+			&i.IsApproved,
+			&i.IsRejected,
+			&i.Source,
+			&i.YtViewCount,
+			&i.FcmNotified,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPlaylistByID = `-- name: GetPlaylistByID :one
+SELECT id, user_id, name, cover_image_url, is_private, created_at FROM playlists WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetPlaylistByID(ctx context.Context, id uuid.UUID) (Playlist, error) {
+	row := q.db.QueryRowContext(ctx, getPlaylistByID, id)
+	var i Playlist
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.CoverImageUrl,
+		&i.IsPrivate,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getPlaylistTracks = `-- name: GetPlaylistTracks :many
+SELECT t.id, t.title, t.artist_id, t.artist_name, t.duration, t.thumbnail_url, t.youtube_id, t.play_count, t.likes_count, t.created_at, t.storage_url, t.genre, t.is_featured, t.is_approved, t.is_rejected, t.source, t.yt_view_count, t.fcm_notified FROM tracks t
+INNER JOIN playlist_tracks pt ON t.id = pt.track_id
+WHERE pt.playlist_id = $1
+ORDER BY pt.added_at DESC
+`
+
+func (q *Queries) GetPlaylistTracks(ctx context.Context, playlistID uuid.UUID) ([]Track, error) {
+	rows, err := q.db.QueryContext(ctx, getPlaylistTracks, playlistID)
 	if err != nil {
 		return nil, err
 	}
@@ -370,6 +535,56 @@ func (q *Queries) GetTrendingTracks(ctx context.Context, limit int32) ([]Track, 
 			&i.Source,
 			&i.YtViewCount,
 			&i.FcmNotified,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUserPlaylists = `-- name: GetUserPlaylists :many
+SELECT p.id, p.user_id, p.name, p.cover_image_url, p.is_private, p.created_at, COUNT(pt.track_id) AS track_count
+FROM playlists p
+LEFT JOIN playlist_tracks pt ON p.id = pt.playlist_id
+WHERE p.user_id = $1
+GROUP BY p.id
+ORDER BY p.created_at DESC
+`
+
+type GetUserPlaylistsRow struct {
+	ID            uuid.UUID      `json:"id"`
+	UserID        uuid.UUID      `json:"user_id"`
+	Name          string         `json:"name"`
+	CoverImageUrl sql.NullString `json:"cover_image_url"`
+	IsPrivate     bool           `json:"is_private"`
+	CreatedAt     time.Time      `json:"created_at"`
+	TrackCount    int64          `json:"track_count"`
+}
+
+func (q *Queries) GetUserPlaylists(ctx context.Context, userID uuid.UUID) ([]GetUserPlaylistsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUserPlaylists, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserPlaylistsRow
+	for rows.Next() {
+		var i GetUserPlaylistsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.CoverImageUrl,
+			&i.IsPrivate,
+			&i.CreatedAt,
+			&i.TrackCount,
 		); err != nil {
 			return nil, err
 		}

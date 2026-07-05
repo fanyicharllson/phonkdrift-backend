@@ -28,6 +28,8 @@ const (
 	TrackService_SetTrackInteraction_FullMethodName   = "/track.TrackService/SetTrackInteraction"
 	TrackService_CreatePlaylist_FullMethodName        = "/track.TrackService/CreatePlaylist"
 	TrackService_AddToPlaylist_FullMethodName         = "/track.TrackService/AddToPlaylist"
+	TrackService_GetPlaylist_FullMethodName           = "/track.TrackService/GetPlaylist"
+	TrackService_GetUserPlaylists_FullMethodName      = "/track.TrackService/GetUserPlaylists"
 	TrackService_SeedTrack_FullMethodName             = "/track.TrackService/SeedTrack"
 	TrackService_ListTracksAdmin_FullMethodName       = "/track.TrackService/ListTracksAdmin"
 	TrackService_ApproveTrack_FullMethodName          = "/track.TrackService/ApproveTrack"
@@ -35,6 +37,7 @@ const (
 	TrackService_FeatureTrack_FullMethodName          = "/track.TrackService/FeatureTrack"
 	TrackService_DeleteTrack_FullMethodName           = "/track.TrackService/DeleteTrack"
 	TrackService_GetAdminStats_FullMethodName         = "/track.TrackService/GetAdminStats"
+	TrackService_GetLikedTracks_FullMethodName        = "/track.TrackService/GetLikedTracks"
 )
 
 // TrackServiceClient is the client API for TrackService service.
@@ -53,6 +56,8 @@ type TrackServiceClient interface {
 	SetTrackInteraction(ctx context.Context, in *InteractionRequest, opts ...grpc.CallOption) (*InteractionResponse, error)
 	CreatePlaylist(ctx context.Context, in *CreatePlaylistRequest, opts ...grpc.CallOption) (*PlaylistResponse, error)
 	AddToPlaylist(ctx context.Context, in *PlaylistTrackRequest, opts ...grpc.CallOption) (*PlaylistActionResponse, error)
+	GetPlaylist(ctx context.Context, in *GetPlaylistRequest, opts ...grpc.CallOption) (*GetPlaylistResponse, error)
+	GetUserPlaylists(ctx context.Context, in *GetUserPlaylistsRequest, opts ...grpc.CallOption) (*GetUserPlaylistsResponse, error)
 	// — Admin operations
 	SeedTrack(ctx context.Context, in *SeedTrackRequest, opts ...grpc.CallOption) (*SeedTrackResponse, error)
 	ListTracksAdmin(ctx context.Context, in *ListTracksAdminRequest, opts ...grpc.CallOption) (*ListTracksAdminResponse, error)
@@ -61,6 +66,8 @@ type TrackServiceClient interface {
 	FeatureTrack(ctx context.Context, in *FeatureTrackRequest, opts ...grpc.CallOption) (*TrackActionResponse, error)
 	DeleteTrack(ctx context.Context, in *TrackActionRequest, opts ...grpc.CallOption) (*TrackActionResponse, error)
 	GetAdminStats(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AdminStatsResponse, error)
+	// — User liked tracks
+	GetLikedTracks(ctx context.Context, in *GetLikedTracksRequest, opts ...grpc.CallOption) (*GetLikedTracksResponse, error)
 }
 
 type trackServiceClient struct {
@@ -161,6 +168,26 @@ func (c *trackServiceClient) AddToPlaylist(ctx context.Context, in *PlaylistTrac
 	return out, nil
 }
 
+func (c *trackServiceClient) GetPlaylist(ctx context.Context, in *GetPlaylistRequest, opts ...grpc.CallOption) (*GetPlaylistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPlaylistResponse)
+	err := c.cc.Invoke(ctx, TrackService_GetPlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) GetUserPlaylists(ctx context.Context, in *GetUserPlaylistsRequest, opts ...grpc.CallOption) (*GetUserPlaylistsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserPlaylistsResponse)
+	err := c.cc.Invoke(ctx, TrackService_GetUserPlaylists_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *trackServiceClient) SeedTrack(ctx context.Context, in *SeedTrackRequest, opts ...grpc.CallOption) (*SeedTrackResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SeedTrackResponse)
@@ -231,6 +258,16 @@ func (c *trackServiceClient) GetAdminStats(ctx context.Context, in *Empty, opts 
 	return out, nil
 }
 
+func (c *trackServiceClient) GetLikedTracks(ctx context.Context, in *GetLikedTracksRequest, opts ...grpc.CallOption) (*GetLikedTracksResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLikedTracksResponse)
+	err := c.cc.Invoke(ctx, TrackService_GetLikedTracks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TrackServiceServer is the server API for TrackService service.
 // All implementations must embed UnimplementedTrackServiceServer
 // for forward compatibility.
@@ -247,6 +284,8 @@ type TrackServiceServer interface {
 	SetTrackInteraction(context.Context, *InteractionRequest) (*InteractionResponse, error)
 	CreatePlaylist(context.Context, *CreatePlaylistRequest) (*PlaylistResponse, error)
 	AddToPlaylist(context.Context, *PlaylistTrackRequest) (*PlaylistActionResponse, error)
+	GetPlaylist(context.Context, *GetPlaylistRequest) (*GetPlaylistResponse, error)
+	GetUserPlaylists(context.Context, *GetUserPlaylistsRequest) (*GetUserPlaylistsResponse, error)
 	// — Admin operations
 	SeedTrack(context.Context, *SeedTrackRequest) (*SeedTrackResponse, error)
 	ListTracksAdmin(context.Context, *ListTracksAdminRequest) (*ListTracksAdminResponse, error)
@@ -255,6 +294,8 @@ type TrackServiceServer interface {
 	FeatureTrack(context.Context, *FeatureTrackRequest) (*TrackActionResponse, error)
 	DeleteTrack(context.Context, *TrackActionRequest) (*TrackActionResponse, error)
 	GetAdminStats(context.Context, *Empty) (*AdminStatsResponse, error)
+	// — User liked tracks
+	GetLikedTracks(context.Context, *GetLikedTracksRequest) (*GetLikedTracksResponse, error)
 	mustEmbedUnimplementedTrackServiceServer()
 }
 
@@ -292,6 +333,12 @@ func (UnimplementedTrackServiceServer) CreatePlaylist(context.Context, *CreatePl
 func (UnimplementedTrackServiceServer) AddToPlaylist(context.Context, *PlaylistTrackRequest) (*PlaylistActionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddToPlaylist not implemented")
 }
+func (UnimplementedTrackServiceServer) GetPlaylist(context.Context, *GetPlaylistRequest) (*GetPlaylistResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPlaylist not implemented")
+}
+func (UnimplementedTrackServiceServer) GetUserPlaylists(context.Context, *GetUserPlaylistsRequest) (*GetUserPlaylistsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserPlaylists not implemented")
+}
 func (UnimplementedTrackServiceServer) SeedTrack(context.Context, *SeedTrackRequest) (*SeedTrackResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SeedTrack not implemented")
 }
@@ -312,6 +359,9 @@ func (UnimplementedTrackServiceServer) DeleteTrack(context.Context, *TrackAction
 }
 func (UnimplementedTrackServiceServer) GetAdminStats(context.Context, *Empty) (*AdminStatsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAdminStats not implemented")
+}
+func (UnimplementedTrackServiceServer) GetLikedTracks(context.Context, *GetLikedTracksRequest) (*GetLikedTracksResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLikedTracks not implemented")
 }
 func (UnimplementedTrackServiceServer) mustEmbedUnimplementedTrackServiceServer() {}
 func (UnimplementedTrackServiceServer) testEmbeddedByValue()                      {}
@@ -496,6 +546,42 @@ func _TrackService_AddToPlaylist_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TrackService_GetPlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPlaylistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).GetPlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_GetPlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).GetPlaylist(ctx, req.(*GetPlaylistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_GetUserPlaylists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserPlaylistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).GetUserPlaylists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_GetUserPlaylists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).GetUserPlaylists(ctx, req.(*GetUserPlaylistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TrackService_SeedTrack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SeedTrackRequest)
 	if err := dec(in); err != nil {
@@ -622,6 +708,24 @@ func _TrackService_GetAdminStats_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TrackService_GetLikedTracks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLikedTracksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).GetLikedTracks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_GetLikedTracks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).GetLikedTracks(ctx, req.(*GetLikedTracksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TrackService_ServiceDesc is the grpc.ServiceDesc for TrackService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -666,6 +770,14 @@ var TrackService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _TrackService_AddToPlaylist_Handler,
 		},
 		{
+			MethodName: "GetPlaylist",
+			Handler:    _TrackService_GetPlaylist_Handler,
+		},
+		{
+			MethodName: "GetUserPlaylists",
+			Handler:    _TrackService_GetUserPlaylists_Handler,
+		},
+		{
 			MethodName: "SeedTrack",
 			Handler:    _TrackService_SeedTrack_Handler,
 		},
@@ -692,6 +804,10 @@ var TrackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAdminStats",
 			Handler:    _TrackService_GetAdminStats_Handler,
+		},
+		{
+			MethodName: "GetLikedTracks",
+			Handler:    _TrackService_GetLikedTracks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

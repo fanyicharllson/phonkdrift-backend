@@ -29,6 +29,17 @@ func (q *Queries) BanUser(ctx context.Context, arg BanUserParams) error {
 	return err
 }
 
+const countUsers = `-- name: CountUsers :one
+SELECT COUNT(*) FROM users
+`
+
+func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUsers)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     username, email, password_hash, verification_code, code_expires_at
@@ -134,7 +145,7 @@ func (q *Queries) GetUserByID(ctx context.Context, dollar_1 uuid.UUID) (User, er
 }
 
 const getUserFCMTokens = `-- name: GetUserFCMTokens :many
-SELECT fcm_token FROM users 
+SELECT fcm_token FROM users
 WHERE is_banned = false AND fcm_token IS NOT NULL AND fcm_token != ''
 `
 

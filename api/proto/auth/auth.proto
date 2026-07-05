@@ -24,6 +24,9 @@ service AuthService {
   rpc UpdateFCMToken (UpdateFCMTokenRequest) returns (UpdateFCMTokenResponse);
 
   rpc GetUserStatus (GetUserStatusRequest) returns (GetUserStatusResponse);
+
+  // Admin stats
+  rpc GetUserCount (GetUserCountRequest) returns (GetUserCountResponse);
 }
 
 message RegisterRequest {
@@ -188,4 +191,10 @@ message GetUserStatusResponse {
   string ban_reason  = 2;
   string username    = 3;
   string phonk_level = 4;
+}
+
+message GetUserCountRequest {}
+
+message GetUserCountResponse {
+  int32 total_users = 1;
 }

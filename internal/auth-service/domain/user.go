@@ -49,6 +49,7 @@ type AuthRepository interface {
 	UnbanUser(ctx context.Context, userID string) error
 	UpdateFCMToken(ctx context.Context, userID string, fcmToken string) error
 	GetAllFCMTokens(ctx context.Context) ([]string, error)
+	CountUsers(ctx context.Context) (int64, error)
 
 }
 
@@ -75,4 +76,5 @@ type AuthUseCase interface {
 	UpdateFCMToken(ctx context.Context, userID string, fcmToken string) error
 	GetUserStatus(ctx context.Context, userID string) (*User, error)
 	SendPushNotification(ctx context.Context, title, body, targetUserID, dataType, dataID string) (int, error)
+	GetUserCount(ctx context.Context) (int64, error)
 }

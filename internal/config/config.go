@@ -46,7 +46,8 @@ type Config struct {
 	FCMServiceAccountJSON string `mapstructure:"FCM_SERVICE_ACCOUNT_JSON"`
 
 	// Admin
-	AdminJWTSecret string `mapstructure:"ADMIN_JWT_SECRET"`
+	AdminJWTSecret  string `mapstructure:"ADMIN_JWT_SECRET"`
+	AdminAllowedIPs string `mapstructure:"ADMIN_ALLOWED_IPS"`
 }
 
 func LoadConfig() (config Config, err error) {
@@ -68,6 +69,7 @@ func LoadConfig() (config Config, err error) {
 		"DO_SPACES_KEY", "DO_SPACES_SECRET", "DO_SPACES_BUCKET",
 		"DO_SPACES_ENDPOINT", "DO_SPACES_CDN_URL",
 		"YOUTUBE_API_KEY", "FCM_SERVICE_ACCOUNT_JSON", "ADMIN_JWT_SECRET",
+		"ADMIN_ALLOWED_IPS",
 	}
 	for _, key := range envKeys {
 		if err := viper.BindEnv(key); err != nil {

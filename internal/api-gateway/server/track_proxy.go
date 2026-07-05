@@ -53,12 +53,32 @@ func (s *GatewayServer) SetTrackInteraction(ctx context.Context, req *trackpb.In
 	return s.trackProxy.client.SetTrackInteraction(ctx, req)
 }
 
+// verifiedUserID pulls the JWT-validated user_id that authUnaryInterceptor
+// stashed in context, so playlist ownership/privacy checks can't be spoofed
+// by whatever user_id a client puts in the request body.
+func verifiedUserID(ctx context.Context) string {
+	uid, _ := ctx.Value(userIDContextKey).(string)
+	return uid
+}
+
 func (s *GatewayServer) CreatePlaylist(ctx context.Context, req *trackpb.CreatePlaylistRequest) (*trackpb.PlaylistResponse, error) {
+	req.UserId = verifiedUserID(ctx)
 	return s.trackProxy.client.CreatePlaylist(ctx, req)
 }
 
 func (s *GatewayServer) AddToPlaylist(ctx context.Context, req *trackpb.PlaylistTrackRequest) (*trackpb.PlaylistActionResponse, error) {
+	req.UserId = verifiedUserID(ctx)
 	return s.trackProxy.client.AddToPlaylist(ctx, req)
+}
+
+func (s *GatewayServer) GetPlaylist(ctx context.Context, req *trackpb.GetPlaylistRequest) (*trackpb.GetPlaylistResponse, error) {
+	req.UserId = verifiedUserID(ctx)
+	return s.trackProxy.client.GetPlaylist(ctx, req)
+}
+
+func (s *GatewayServer) GetUserPlaylists(ctx context.Context, req *trackpb.GetUserPlaylistsRequest) (*trackpb.GetUserPlaylistsResponse, error) {
+	req.UserId = verifiedUserID(ctx)
+	return s.trackProxy.client.GetUserPlaylists(ctx, req)
 }
 
 func (s *GatewayServer) GetForYou(ctx context.Context, req *trackpb.ForYouRequest) (*trackpb.ForYouResponse, error) {
@@ -91,4 +111,8 @@ func (s *GatewayServer) DeleteTrack(ctx context.Context, req *trackpb.TrackActio
 
 func (s *GatewayServer) GetAdminStats(ctx context.Context, req *trackpb.Empty) (*trackpb.AdminStatsResponse, error) {
 	return s.trackProxy.client.GetAdminStats(ctx, req)
+}
+
+func (s *GatewayServer) GetLikedTracks(ctx context.Context, req *trackpb.GetLikedTracksRequest) (*trackpb.GetLikedTracksResponse, error) {
+	return s.trackProxy.client.GetLikedTracks(ctx, req)
 }

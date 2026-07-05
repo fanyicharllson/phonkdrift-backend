@@ -1718,6 +1718,86 @@ func (x *GetUserStatusResponse) GetPhonkLevel() string {
 	return ""
 }
 
+type GetUserCountRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserCountRequest) Reset() {
+	*x = GetUserCountRequest{}
+	mi := &file_auth_auth_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserCountRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserCountRequest) ProtoMessage() {}
+
+func (x *GetUserCountRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserCountRequest.ProtoReflect.Descriptor instead.
+func (*GetUserCountRequest) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{31}
+}
+
+type GetUserCountResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TotalUsers    int32                  `protobuf:"varint,1,opt,name=total_users,json=totalUsers,proto3" json:"total_users,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserCountResponse) Reset() {
+	*x = GetUserCountResponse{}
+	mi := &file_auth_auth_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserCountResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserCountResponse) ProtoMessage() {}
+
+func (x *GetUserCountResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserCountResponse.ProtoReflect.Descriptor instead.
+func (*GetUserCountResponse) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GetUserCountResponse) GetTotalUsers() int32 {
+	if x != nil {
+		return x.TotalUsers
+	}
+	return 0
+}
+
 var File_auth_auth_proto protoreflect.FileDescriptor
 
 const file_auth_auth_proto_rawDesc = "" +
@@ -1837,7 +1917,11 @@ const file_auth_auth_proto_rawDesc = "" +
 	"ban_reason\x18\x02 \x01(\tR\tbanReason\x12\x1a\n" +
 	"\busername\x18\x03 \x01(\tR\busername\x12\x1f\n" +
 	"\vphonk_level\x18\x04 \x01(\tR\n" +
-	"phonkLevel2\x93\b\n" +
+	"phonkLevel\"\x15\n" +
+	"\x13GetUserCountRequest\"7\n" +
+	"\x14GetUserCountResponse\x12\x1f\n" +
+	"\vtotal_users\x18\x01 \x01(\x05R\n" +
+	"totalUsers2\xda\b\n" +
 	"\vAuthService\x12=\n" +
 	"\fRegisterUser\x12\x15.auth.RegisterRequest\x1a\x16.auth.RegisterResponse\x124\n" +
 	"\tLoginUser\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\x12H\n" +
@@ -1855,7 +1939,8 @@ const file_auth_auth_proto_rawDesc = "" +
 	"\tUnbanUser\x12\x16.auth.UnbanUserRequest\x1a\x17.auth.UnbanUserResponse\x12U\n" +
 	"\x14SendPushNotification\x12\x1d.auth.PushNotificationRequest\x1a\x1e.auth.PushNotificationResponse\x12K\n" +
 	"\x0eUpdateFCMToken\x12\x1b.auth.UpdateFCMTokenRequest\x1a\x1c.auth.UpdateFCMTokenResponse\x12H\n" +
-	"\rGetUserStatus\x12\x1a.auth.GetUserStatusRequest\x1a\x1b.auth.GetUserStatusResponseB=Z;github.com/fanyicharllson/phonkdrift-backend/pb/auth;authpbb\x06proto3"
+	"\rGetUserStatus\x12\x1a.auth.GetUserStatusRequest\x1a\x1b.auth.GetUserStatusResponse\x12E\n" +
+	"\fGetUserCount\x12\x19.auth.GetUserCountRequest\x1a\x1a.auth.GetUserCountResponseB=Z;github.com/fanyicharllson/phonkdrift-backend/pb/auth;authpbb\x06proto3"
 
 var (
 	file_auth_auth_proto_rawDescOnce sync.Once
@@ -1869,7 +1954,7 @@ func file_auth_auth_proto_rawDescGZIP() []byte {
 	return file_auth_auth_proto_rawDescData
 }
 
-var file_auth_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_auth_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_auth_auth_proto_goTypes = []any{
 	(*RegisterRequest)(nil),          // 0: auth.RegisterRequest
 	(*RegisterResponse)(nil),         // 1: auth.RegisterResponse
@@ -1902,6 +1987,8 @@ var file_auth_auth_proto_goTypes = []any{
 	(*UpdateFCMTokenResponse)(nil),   // 28: auth.UpdateFCMTokenResponse
 	(*GetUserStatusRequest)(nil),     // 29: auth.GetUserStatusRequest
 	(*GetUserStatusResponse)(nil),    // 30: auth.GetUserStatusResponse
+	(*GetUserCountRequest)(nil),      // 31: auth.GetUserCountRequest
+	(*GetUserCountResponse)(nil),     // 32: auth.GetUserCountResponse
 }
 var file_auth_auth_proto_depIdxs = []int32{
 	14, // 0: auth.ValidateTokenResponse.user:type_name -> auth.User
@@ -1922,23 +2009,25 @@ var file_auth_auth_proto_depIdxs = []int32{
 	25, // 15: auth.AuthService.SendPushNotification:input_type -> auth.PushNotificationRequest
 	27, // 16: auth.AuthService.UpdateFCMToken:input_type -> auth.UpdateFCMTokenRequest
 	29, // 17: auth.AuthService.GetUserStatus:input_type -> auth.GetUserStatusRequest
-	1,  // 18: auth.AuthService.RegisterUser:output_type -> auth.RegisterResponse
-	5,  // 19: auth.AuthService.LoginUser:output_type -> auth.LoginResponse
-	7,  // 20: auth.AuthService.ValidateToken:output_type -> auth.ValidateTokenResponse
-	3,  // 21: auth.AuthService.VerifyCode:output_type -> auth.VerifyResponse
-	9,  // 22: auth.AuthService.ResendCode:output_type -> auth.ResendCodeResponse
-	11, // 23: auth.AuthService.GetUser:output_type -> auth.GetUserResponse
-	13, // 24: auth.AuthService.UpdateProfile:output_type -> auth.UpdateProfileResponse
-	16, // 25: auth.AuthService.ForgotPassword:output_type -> auth.ForgotPasswordResponse
-	18, // 26: auth.AuthService.ResetPassword:output_type -> auth.ResetPasswordResponse
-	20, // 27: auth.AuthService.VerifyResetCode:output_type -> auth.VerifyResetCodeResponse
-	22, // 28: auth.AuthService.BanUser:output_type -> auth.BanUserResponse
-	24, // 29: auth.AuthService.UnbanUser:output_type -> auth.UnbanUserResponse
-	26, // 30: auth.AuthService.SendPushNotification:output_type -> auth.PushNotificationResponse
-	28, // 31: auth.AuthService.UpdateFCMToken:output_type -> auth.UpdateFCMTokenResponse
-	30, // 32: auth.AuthService.GetUserStatus:output_type -> auth.GetUserStatusResponse
-	18, // [18:33] is the sub-list for method output_type
-	3,  // [3:18] is the sub-list for method input_type
+	31, // 18: auth.AuthService.GetUserCount:input_type -> auth.GetUserCountRequest
+	1,  // 19: auth.AuthService.RegisterUser:output_type -> auth.RegisterResponse
+	5,  // 20: auth.AuthService.LoginUser:output_type -> auth.LoginResponse
+	7,  // 21: auth.AuthService.ValidateToken:output_type -> auth.ValidateTokenResponse
+	3,  // 22: auth.AuthService.VerifyCode:output_type -> auth.VerifyResponse
+	9,  // 23: auth.AuthService.ResendCode:output_type -> auth.ResendCodeResponse
+	11, // 24: auth.AuthService.GetUser:output_type -> auth.GetUserResponse
+	13, // 25: auth.AuthService.UpdateProfile:output_type -> auth.UpdateProfileResponse
+	16, // 26: auth.AuthService.ForgotPassword:output_type -> auth.ForgotPasswordResponse
+	18, // 27: auth.AuthService.ResetPassword:output_type -> auth.ResetPasswordResponse
+	20, // 28: auth.AuthService.VerifyResetCode:output_type -> auth.VerifyResetCodeResponse
+	22, // 29: auth.AuthService.BanUser:output_type -> auth.BanUserResponse
+	24, // 30: auth.AuthService.UnbanUser:output_type -> auth.UnbanUserResponse
+	26, // 31: auth.AuthService.SendPushNotification:output_type -> auth.PushNotificationResponse
+	28, // 32: auth.AuthService.UpdateFCMToken:output_type -> auth.UpdateFCMTokenResponse
+	30, // 33: auth.AuthService.GetUserStatus:output_type -> auth.GetUserStatusResponse
+	32, // 34: auth.AuthService.GetUserCount:output_type -> auth.GetUserCountResponse
+	19, // [19:35] is the sub-list for method output_type
+	3,  // [3:19] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
 	3,  // [3:3] is the sub-list for extension extendee
 	0,  // [0:3] is the sub-list for field type_name
@@ -1955,7 +2044,7 @@ func file_auth_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_auth_proto_rawDesc), len(file_auth_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   31,
+			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

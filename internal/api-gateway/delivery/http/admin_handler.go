@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -23,7 +24,7 @@ func RegisterAdminRoutes(
 	scheduler *discovery.Scheduler,
 ) {
 	admin := r.Group("/api/v1/admin")
-	admin.Use(adminAuthMiddleware(cfg.AdminJWTSecret))
+	admin.Use(adminAuthMiddleware(cfg))
 	{
 		// Track management
 		admin.POST("/tracks/seed", handleSeedTrack(uploader, trackClient, cfg))
@@ -50,16 +51,60 @@ func RegisterAdminRoutes(
 
 // ─── ADMIN AUTH MIDDLEWARE ───────────────────────────────────────────────────
 
-func adminAuthMiddleware(adminSecret string) gin.HandlerFunc {
+// adminAuthMiddleware restricts /api/v1/admin/* to loopback/private-network callers
+// (e.g. Next.js running on the same host or VPC) plus any IPs/CIDRs explicitly
+// listed in ADMIN_ALLOWED_IPS. Auth itself is handled by Next.js/Supabase upstream —
+// this is a network-level guard so the routes aren't reachable from the open internet.
+func adminAuthMiddleware(cfg *config.Config) gin.HandlerFunc {
+	allowedIPs, allowedCIDRs := parseAdminAllowlist(cfg.AdminAllowedIPs)
+
 	return func(c *gin.Context) {
-		token := c.GetHeader("Authorization")
-		if token == "" || token != "Bearer "+adminSecret {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Admin access denied"})
+		clientIP := net.ParseIP(c.ClientIP())
+		if clientIP == nil || !isAdminIPAllowed(clientIP, allowedIPs, allowedCIDRs) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Admin access denied: IP not whitelisted"})
 			c.Abort()
 			return
 		}
 		c.Next()
 	}
+}
+
+func parseAdminAllowlist(raw string) ([]net.IP, []*net.IPNet) {
+	var ips []net.IP
+	var cidrs []*net.IPNet
+	for _, entry := range strings.Split(raw, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		if strings.Contains(entry, "/") {
+			if _, ipnet, err := net.ParseCIDR(entry); err == nil {
+				cidrs = append(cidrs, ipnet)
+			}
+			continue
+		}
+		if ip := net.ParseIP(entry); ip != nil {
+			ips = append(ips, ip)
+		}
+	}
+	return ips, cidrs
+}
+
+func isAdminIPAllowed(ip net.IP, allowedIPs []net.IP, allowedCIDRs []*net.IPNet) bool {
+	if ip.IsLoopback() || ip.IsPrivate() {
+		return true
+	}
+	for _, allowed := range allowedIPs {
+		if allowed.Equal(ip) {
+			return true
+		}
+	}
+	for _, cidr := range allowedCIDRs {
+		if cidr.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 // ─── TRACK HANDLERS ──────────────────────────────────────────────────────────
@@ -297,6 +342,10 @@ func handleGetStats(trackClient trackpb.TrackServiceClient, authClient authpb.Au
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
+		}
+
+		if userCount, err := authClient.GetUserCount(ctx, &authpb.GetUserCountRequest{}); err == nil {
+			stats.TotalUsers = userCount.GetTotalUsers()
 		}
 
 		c.JSON(http.StatusOK, stats)

@@ -86,3 +86,37 @@ SELECT * FROM tracks
 WHERE is_approved = true AND is_rejected = false AND storage_url IS NOT NULL
 ORDER BY play_count DESC, likes_count DESC
 LIMIT $1;
+
+-- name: GetLikedTracks :many
+SELECT t.* FROM tracks t
+INNER JOIN track_interactions ti ON t.id = ti.track_id
+WHERE ti.user_id = $1 AND ti.is_liked = true
+ORDER BY ti.interacted_at DESC
+LIMIT $2 OFFSET ($3::int * $2);
+
+-- name: CreatePlaylist :one
+INSERT INTO playlists (user_id, name, cover_image_url)
+VALUES ($1, $2, $3)
+RETURNING *;
+
+-- name: AddTrackToPlaylist :exec
+INSERT INTO playlist_tracks (playlist_id, track_id)
+VALUES ($1, $2)
+ON CONFLICT (playlist_id, track_id) DO NOTHING;
+
+-- name: GetPlaylistByID :one
+SELECT * FROM playlists WHERE id = $1 LIMIT 1;
+
+-- name: GetPlaylistTracks :many
+SELECT t.* FROM tracks t
+INNER JOIN playlist_tracks pt ON t.id = pt.track_id
+WHERE pt.playlist_id = $1
+ORDER BY pt.added_at DESC;
+
+-- name: GetUserPlaylists :many
+SELECT p.*, COUNT(pt.track_id) AS track_count
+FROM playlists p
+LEFT JOIN playlist_tracks pt ON p.id = pt.playlist_id
+WHERE p.user_id = $1
+GROUP BY p.id
+ORDER BY p.created_at DESC;

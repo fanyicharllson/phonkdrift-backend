@@ -307,6 +307,10 @@ func (u *authUseCase) UnbanUser(ctx context.Context, userID string) error {
 	return u.repo.UnbanUser(ctx, userID)
 }
 
+func (u *authUseCase) GetUserCount(ctx context.Context) (int64, error) {
+	return u.repo.CountUsers(ctx)
+}
+
 func (u *authUseCase) UpdateFCMToken(ctx context.Context, userID, fcmToken string) error {
 	return u.repo.UpdateFCMToken(ctx, userID, fcmToken)
 }

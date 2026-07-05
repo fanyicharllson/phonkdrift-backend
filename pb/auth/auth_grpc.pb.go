@@ -34,6 +34,7 @@ const (
 	AuthService_SendPushNotification_FullMethodName = "/auth.AuthService/SendPushNotification"
 	AuthService_UpdateFCMToken_FullMethodName       = "/auth.AuthService/UpdateFCMToken"
 	AuthService_GetUserStatus_FullMethodName        = "/auth.AuthService/GetUserStatus"
+	AuthService_GetUserCount_FullMethodName         = "/auth.AuthService/GetUserCount"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -58,6 +59,8 @@ type AuthServiceClient interface {
 	SendPushNotification(ctx context.Context, in *PushNotificationRequest, opts ...grpc.CallOption) (*PushNotificationResponse, error)
 	UpdateFCMToken(ctx context.Context, in *UpdateFCMTokenRequest, opts ...grpc.CallOption) (*UpdateFCMTokenResponse, error)
 	GetUserStatus(ctx context.Context, in *GetUserStatusRequest, opts ...grpc.CallOption) (*GetUserStatusResponse, error)
+	// Admin stats
+	GetUserCount(ctx context.Context, in *GetUserCountRequest, opts ...grpc.CallOption) (*GetUserCountResponse, error)
 }
 
 type authServiceClient struct {
@@ -218,6 +221,16 @@ func (c *authServiceClient) GetUserStatus(ctx context.Context, in *GetUserStatus
 	return out, nil
 }
 
+func (c *authServiceClient) GetUserCount(ctx context.Context, in *GetUserCountRequest, opts ...grpc.CallOption) (*GetUserCountResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserCountResponse)
+	err := c.cc.Invoke(ctx, AuthService_GetUserCount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -240,6 +253,8 @@ type AuthServiceServer interface {
 	SendPushNotification(context.Context, *PushNotificationRequest) (*PushNotificationResponse, error)
 	UpdateFCMToken(context.Context, *UpdateFCMTokenRequest) (*UpdateFCMTokenResponse, error)
 	GetUserStatus(context.Context, *GetUserStatusRequest) (*GetUserStatusResponse, error)
+	// Admin stats
+	GetUserCount(context.Context, *GetUserCountRequest) (*GetUserCountResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -294,6 +309,9 @@ func (UnimplementedAuthServiceServer) UpdateFCMToken(context.Context, *UpdateFCM
 }
 func (UnimplementedAuthServiceServer) GetUserStatus(context.Context, *GetUserStatusRequest) (*GetUserStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserStatus not implemented")
+}
+func (UnimplementedAuthServiceServer) GetUserCount(context.Context, *GetUserCountRequest) (*GetUserCountResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserCount not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -586,6 +604,24 @@ func _AuthService_GetUserStatus_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_GetUserCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserCountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetUserCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetUserCount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetUserCount(ctx, req.(*GetUserCountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -652,6 +688,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserStatus",
 			Handler:    _AuthService_GetUserStatus_Handler,
+		},
+		{
+			MethodName: "GetUserCount",
+			Handler:    _AuthService_GetUserCount_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

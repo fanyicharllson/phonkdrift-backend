@@ -13,6 +13,7 @@ import (
 
 type Querier interface {
 	BanUser(ctx context.Context, arg BanUserParams) error
+	CountUsers(ctx context.Context) (int64, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	GetUserByEmail(ctx context.Context, dollar_1 string) (User, error)
 	GetUserByID(ctx context.Context, dollar_1 uuid.UUID) (User, error)

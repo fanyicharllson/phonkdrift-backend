@@ -19,6 +19,8 @@ service TrackService {
   rpc SetTrackInteraction (InteractionRequest) returns (InteractionResponse);
   rpc CreatePlaylist (CreatePlaylistRequest) returns (PlaylistResponse);
   rpc AddToPlaylist (PlaylistTrackRequest) returns (PlaylistActionResponse);
+  rpc GetPlaylist (GetPlaylistRequest) returns (GetPlaylistResponse);
+  rpc GetUserPlaylists (GetUserPlaylistsRequest) returns (GetUserPlaylistsResponse);
 
   //  — Admin operations
   rpc SeedTrack (SeedTrackRequest) returns (SeedTrackResponse);
@@ -28,6 +30,9 @@ service TrackService {
   rpc FeatureTrack (FeatureTrackRequest) returns (TrackActionResponse);
   rpc DeleteTrack (TrackActionRequest) returns (TrackActionResponse);
   rpc GetAdminStats (Empty) returns (AdminStatsResponse);
+
+  // — User liked tracks
+  rpc GetLikedTracks (GetLikedTracksRequest) returns (GetLikedTracksResponse);
 }
 
 // --- CORE DATA TYPES ---
@@ -117,19 +122,51 @@ message CreatePlaylistRequest {
 }
 
 message PlaylistResponse {
-  string playlist_id = 1;
-  string name        = 2;
-  string user_id     = 3;
+  string playlist_id     = 1;
+  string name            = 2;
+  string user_id         = 3;
+  string cover_image_url = 4;
 }
 
 message PlaylistTrackRequest {
   string playlist_id = 1;
   string track_id    = 2;
+  string user_id     = 3; // set by the gateway from the verified session; used for ownership check
 }
 
 message PlaylistActionResponse {
   bool   success = 1;
   string message = 2;
+}
+
+message GetPlaylistRequest {
+  string playlist_id = 1;
+  string user_id     = 2; // set by the gateway from the verified session; used for the privacy check
+}
+
+message GetPlaylistResponse {
+  string playlist_id     = 1;
+  string name            = 2;
+  string user_id         = 3;
+  string cover_image_url = 4;
+  bool   is_private      = 5;
+  repeated TrackMetadata tracks = 6;
+}
+
+message GetUserPlaylistsRequest {
+  string user_id = 1;
+}
+
+message PlaylistSummary {
+  string playlist_id     = 1;
+  string name            = 2;
+  string cover_image_url = 3;
+  bool   is_private      = 4;
+  int32  track_count     = 5;
+}
+
+message GetUserPlaylistsResponse {
+  repeated PlaylistSummary playlists = 1;
 }
 
 //  — ForYou feed
@@ -186,4 +223,15 @@ message AdminStatsResponse {
   int32 total_plays    = 2;
   int32 pending_tracks = 3;
   int32 total_users    = 4;
+}
+
+message GetLikedTracksRequest {
+  string user_id = 1;
+  int32  limit   = 2;
+  int32  page    = 3;
+}
+
+message GetLikedTracksResponse {
+  repeated TrackMetadata tracks = 1;
+  int32                  total  = 2;
 }

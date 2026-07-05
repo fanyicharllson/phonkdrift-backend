@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/fanyicharllson/phonkdrift-backend/internal/api-gateway/middleware"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/config"
 	discovery "github.com/fanyicharllson/phonkdrift-backend/internal/discovery-service"
 	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
@@ -36,11 +37,13 @@ func StartHTTPServer(
         publicAuth.GET("/user/status/:user_id", handleGetUserStatus(authClient))
 	}
 
-	// 🏎️ Public Track Engine Delivery Group (Placeholder for rest testing if needed)
-	// publicTrack := r.Group("/api/v1/tracks")
-	// {
-	//     // You can add HTTP mappings to proxy into trackClient here later!
-	// }
+	// 🏎️ Track Engine Delivery Group (requires validated JWT session)
+	publicTrack := r.Group("/api/v1/tracks")
+	publicTrack.Use(middleware.AuthRequired(authClient))
+	{
+		publicTrack.GET("/liked", handleGetLikedTracks(trackClient))
+		publicTrack.GET("/trending", handleGetTrendingTracks(trackClient))
+	}
 
 	// Register Admin Routes
 	RegisterAdminRoutes(r, cfg, authClient, trackClient, uploader, scheduler)

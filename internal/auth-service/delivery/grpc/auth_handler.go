@@ -255,3 +255,11 @@ func (h *AuthGRPCHandler) GetUserStatus(ctx context.Context, req *authpb.GetUser
 		PhonkLevel: user.PhonkLevel,
 	}, nil
 }
+
+func (h *AuthGRPCHandler) GetUserCount(ctx context.Context, _ *authpb.GetUserCountRequest) (*authpb.GetUserCountResponse, error) {
+	count, err := h.useCase.GetUserCount(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to count users: %v", err)
+	}
+	return &authpb.GetUserCountResponse{TotalUsers: int32(count)}, nil
+}

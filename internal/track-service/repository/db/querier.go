@@ -6,19 +6,27 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
+	AddTrackToPlaylist(ctx context.Context, arg AddTrackToPlaylistParams) error
 	ApproveTrack(ctx context.Context, id string) error
+	CreatePlaylist(ctx context.Context, arg CreatePlaylistParams) (Playlist, error)
 	DeleteTrack(ctx context.Context, id string) error
 	DeleteTrackInteraction(ctx context.Context, arg DeleteTrackInteractionParams) error
 	GetAllTracksAdmin(ctx context.Context, arg GetAllTracksAdminParams) ([]Track, error)
 	GetApprovedUnnotifiedTracks(ctx context.Context) ([]Track, error)
 	GetForYouTracks(ctx context.Context, limit int32) ([]Track, error)
+	GetLikedTracks(ctx context.Context, arg GetLikedTracksParams) ([]Track, error)
+	GetPlaylistByID(ctx context.Context, id uuid.UUID) (Playlist, error)
+	GetPlaylistTracks(ctx context.Context, playlistID uuid.UUID) ([]Track, error)
 	GetRecentlyPlayed(ctx context.Context, arg GetRecentlyPlayedParams) ([]GetRecentlyPlayedRow, error)
 	GetTrack(ctx context.Context, id string) (Track, error)
 	GetTrackByYoutubeID(ctx context.Context, youtubeID string) (Track, error)
 	GetTrendingTracks(ctx context.Context, limit int32) ([]Track, error)
+	GetUserPlaylists(ctx context.Context, userID uuid.UUID) ([]GetUserPlaylistsRow, error)
 	InsertTrack(ctx context.Context, arg InsertTrackParams) (Track, error)
 	MarkTrackFCMNotified(ctx context.Context, id string) error
 	RejectTrack(ctx context.Context, id string) error
