@@ -28,6 +28,10 @@ func StartHTTPServer(
 	// security proxy warning right after initialization
 	r.SetTrustedProxies(nil)
 
+	// CORS must be registered before any route groups so it applies to all of them,
+	// including preflight OPTIONS requests for routes with no explicit OPTIONS handler
+	r.Use(middleware.CORS(cfg.AllowedOrigins))
+
 	// 🔑 Public Auth Delivery Group
 	publicAuth := r.Group("/api/v1/auth")
 	{

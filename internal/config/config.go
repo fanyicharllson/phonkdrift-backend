@@ -48,6 +48,9 @@ type Config struct {
 	// Admin
 	AdminJWTSecret  string `mapstructure:"ADMIN_JWT_SECRET"`
 	AdminAllowedIPs string `mapstructure:"ADMIN_ALLOWED_IPS"`
+
+	// CORS — comma-separated list of origins allowed to make credentialed browser requests
+	AllowedOrigins string `mapstructure:"ALLOWED_ORIGINS"`
 }
 
 func LoadConfig() (config Config, err error) {
@@ -69,7 +72,7 @@ func LoadConfig() (config Config, err error) {
 		"DO_SPACES_KEY", "DO_SPACES_SECRET", "DO_SPACES_BUCKET",
 		"DO_SPACES_ENDPOINT", "DO_SPACES_CDN_URL",
 		"YOUTUBE_API_KEY", "FCM_SERVICE_ACCOUNT_JSON", "ADMIN_JWT_SECRET",
-		"ADMIN_ALLOWED_IPS",
+		"ADMIN_ALLOWED_IPS", "ALLOWED_ORIGINS",
 	}
 	for _, key := range envKeys {
 		if err := viper.BindEnv(key); err != nil {
