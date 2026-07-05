@@ -85,7 +85,7 @@ func (u *trackUsecase) GetAudioStream(ctx context.Context, youtubeID string) (st
 	args := []string{
 		"-f", "bestaudio",
 		"-g",
-		"--js-runtimes", "nodejs",
+		"--js-runtimes", "node",
 		"--no-playlist",
 		videoURL,
 	}
