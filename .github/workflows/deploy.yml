@@ -92,6 +92,7 @@ jobs:
           kubectl rollout restart deployment/auth-service-deployment
           kubectl rollout restart deployment/track-service-deployment
           kubectl rollout restart deployment/notification-service-deployment
+          kubectl rollout restart deployment/discovery-service-deployment
           # kubectl rollout restart deployment/chat-service-deployment
           
           # 4. Verify deployment rollouts completed successfully
