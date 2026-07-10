@@ -58,6 +58,16 @@ spec:
       labels:
         app: track-service
     spec:
+      initContainers:
+      - name: cookies-init
+        image: busybox:1.36
+        command: ["sh", "-c", "cp /secret-cookies/cookies.txt /app/cookies/cookies.txt 2>/dev/null || true"]
+        volumeMounts:
+        - name: ytdlp-cookies-secret
+          mountPath: /secret-cookies
+          readOnly: true
+        - name: ytdlp-cookies
+          mountPath: /app/cookies
       containers:
       - name: track-service
         image: charllson717/phonkdrift-track-service:latest
@@ -72,12 +82,13 @@ spec:
         volumeMounts:
         - name: ytdlp-cookies
           mountPath: /app/cookies
-          readOnly: false
       volumes:
-      - name: ytdlp-cookies
+      - name: ytdlp-cookies-secret
         secret:
           secretName: ytdlp-cookies
           optional: true
+      - name: ytdlp-cookies
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -138,6 +149,16 @@ spec:
       labels:
         app: discovery-service
     spec:
+      initContainers:
+      - name: cookies-init
+        image: busybox:1.36
+        command: ["sh", "-c", "cp /secret-cookies/cookies.txt /app/cookies/cookies.txt 2>/dev/null || true"]
+        volumeMounts:
+        - name: ytdlp-cookies-secret
+          mountPath: /secret-cookies
+          readOnly: true
+        - name: ytdlp-cookies
+          mountPath: /app/cookies
       containers:
       - name: discovery-service
         image: charllson717/phonkdrift-discovery-service:latest
@@ -150,12 +171,13 @@ spec:
         volumeMounts:
         - name: ytdlp-cookies
           mountPath: /app/cookies
-          readOnly: false
       volumes:
-      - name: ytdlp-cookies
+      - name: ytdlp-cookies-secret
         secret:
           secretName: ytdlp-cookies
           optional: true
+      - name: ytdlp-cookies
+        emptyDir: {}
 
 ---
 # ==============================================================================
@@ -175,6 +197,16 @@ spec:
       labels:
         app: api-gateway
     spec:
+      initContainers:
+      - name: cookies-init
+        image: busybox:1.36
+        command: ["sh", "-c", "cp /secret-cookies/cookies.txt /app/cookies/cookies.txt 2>/dev/null || true"]
+        volumeMounts:
+        - name: ytdlp-cookies-secret
+          mountPath: /secret-cookies
+          readOnly: true
+        - name: ytdlp-cookies
+          mountPath: /app/cookies
       containers:
       - name: api-gateway
         image: charllson717/phonkdrift-api-gateway:latest
@@ -190,12 +222,13 @@ spec:
         volumeMounts:
         - name: ytdlp-cookies
           mountPath: /app/cookies
-          readOnly: false
       volumes:
-      - name: ytdlp-cookies
+      - name: ytdlp-cookies-secret
         secret:
           secretName: ytdlp-cookies
           optional: true
+      - name: ytdlp-cookies
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
