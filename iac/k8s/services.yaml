@@ -72,7 +72,7 @@ spec:
         volumeMounts:
         - name: ytdlp-cookies
           mountPath: /app/cookies
-          readOnly: true
+          readOnly: false
       volumes:
       - name: ytdlp-cookies
         secret:
@@ -150,7 +150,7 @@ spec:
         volumeMounts:
         - name: ytdlp-cookies
           mountPath: /app/cookies
-          readOnly: true
+          readOnly: false
       volumes:
       - name: ytdlp-cookies
         secret:
@@ -190,7 +190,7 @@ spec:
         volumeMounts:
         - name: ytdlp-cookies
           mountPath: /app/cookies
-          readOnly: true
+          readOnly: false
       volumes:
       - name: ytdlp-cookies
         secret:
