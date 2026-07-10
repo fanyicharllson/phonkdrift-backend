@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -12,7 +13,17 @@ import (
 	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
 	trackpb "github.com/fanyicharllson/phonkdrift-backend/pb/track"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+const maxAvatarBytes = 5 << 20 // 5MB
+
+var allowedAvatarTypes = map[string]bool{
+	"image/jpeg": true,
+	"image/png":  true,
+	"image/webp": true,
+}
 
 // StartHTTPServer accepts BOTH clients to multiplex proxy endpoints out cleanly
 func StartHTTPServer(
@@ -47,6 +58,17 @@ func StartHTTPServer(
 	{
 		publicTrack.GET("/liked", handleGetLikedTracks(trackClient))
 		publicTrack.GET("/trending", handleGetTrendingTracks(trackClient))
+	}
+
+	// 👤 Authenticated Profile/User Delivery Group
+	authedUsers := r.Group("/api/v1/users")
+	authedUsers.Use(middleware.AuthRequired(authClient))
+	{
+		authedUsers.POST("/me/avatar", handleUploadAvatar(authClient, uploader))
+		authedUsers.PATCH("/me/username", handleUpdateUsername(authClient))
+		authedUsers.PATCH("/me/password", handleChangePassword(authClient))
+		authedUsers.PATCH("/me/phonk-level", handleUpdatePhonkLevel(authClient))
+		authedUsers.POST("/me/feedback", handleSubmitFeedback(authClient))
 	}
 
 	// Register Admin Routes
@@ -147,6 +169,193 @@ func handleGetUserStatus(authClient authpb.AuthServiceClient) gin.HandlerFunc {
 			"username":    res.GetUsername(),
 			"phonk_level": res.GetPhonkLevel(),
 		})
+	}
+}
+
+func handleUploadAvatar(authClient authpb.AuthServiceClient, uploader *discovery.Uploader) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if uploader == nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "avatar storage is not configured"})
+			return
+		}
+
+		userID := c.GetString("user_id")
+
+		fileHeader, err := c.FormFile("avatar")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "avatar file is required"})
+			return
+		}
+		if fileHeader.Size > maxAvatarBytes {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "avatar must be 5MB or smaller"})
+			return
+		}
+
+		file, err := fileHeader.Open()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read uploaded file"})
+			return
+		}
+		defer file.Close()
+
+		data, err := io.ReadAll(file)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read uploaded file"})
+			return
+		}
+
+		contentType := http.DetectContentType(data)
+		if !allowedAvatarTypes[contentType] {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "avatar must be a JPEG, PNG, or WebP image"})
+			return
+		}
+
+		ext := ".jpg"
+		switch contentType {
+		case "image/png":
+			ext = ".png"
+		case "image/webp":
+			ext = ".webp"
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		cdnURL, err := uploader.PutObject(ctx, "avatars/"+userID+ext, data, contentType)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload avatar: " + err.Error()})
+			return
+		}
+
+		if _, err := authClient.UploadAvatar(ctx, &authpb.UploadAvatarRequest{
+			UserId:    userID,
+			AvatarUrl: cdnURL,
+		}); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"avatar_url": cdnURL})
+	}
+}
+
+func handleUpdateUsername(authClient authpb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			Username string `json:"username" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		res, err := authClient.UpdateUsername(ctx, &authpb.UpdateUsernameRequest{
+			UserId:      c.GetString("user_id"),
+			NewUsername: req.Username,
+		})
+		if err != nil {
+			st, _ := status.FromError(err)
+			if st.Code() == codes.AlreadyExists {
+				c.JSON(http.StatusConflict, gin.H{"error": st.Message()})
+				return
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": res.GetSuccess(), "user": res.GetUser()})
+	}
+}
+
+func handleChangePassword(authClient authpb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			OldPassword string `json:"old_password" binding:"required"`
+			NewPassword string `json:"new_password" binding:"required,min=6"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		res, err := authClient.ChangePassword(ctx, &authpb.ChangePasswordRequest{
+			UserId:      c.GetString("user_id"),
+			OldPassword: req.OldPassword,
+			NewPassword: req.NewPassword,
+		})
+		if err != nil {
+			st, _ := status.FromError(err)
+			if st.Code() == codes.PermissionDenied {
+				c.JSON(http.StatusForbidden, gin.H{"error": st.Message()})
+				return
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": res.GetSuccess(), "message": res.GetMessage()})
+	}
+}
+
+func handleUpdatePhonkLevel(authClient authpb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			PhonkLevel string `json:"phonk_level" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		res, err := authClient.UpdateProfile(ctx, &authpb.UpdateProfileRequest{
+			UserId:     c.GetString("user_id"),
+			PhonkLevel: req.PhonkLevel,
+		})
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": res.GetSuccess(), "user": res.GetUser()})
+	}
+}
+
+func handleSubmitFeedback(authClient authpb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			Rating     int32  `json:"rating" binding:"required,min=1,max=5"`
+			Comment    string `json:"comment"`
+			AppVersion string `json:"app_version"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		res, err := authClient.SubmitFeedback(ctx, &authpb.SubmitFeedbackRequest{
+			UserId:     c.GetString("user_id"),
+			Rating:     req.Rating,
+			Comment:    req.Comment,
+			AppVersion: req.AppVersion,
+		})
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": res.GetSuccess(), "feedback_id": res.GetFeedbackId()})
 	}
 }
 

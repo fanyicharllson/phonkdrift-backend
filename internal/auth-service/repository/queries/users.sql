@@ -68,3 +68,15 @@ WHERE is_banned = false AND fcm_token IS NOT NULL AND fcm_token != '';
 
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users;
+
+-- name: UpdateAvatarURL :one
+UPDATE users
+SET avatar_url = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING *;
+
+-- name: UpdateUsername :one
+UPDATE users
+SET username = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING *;

@@ -87,21 +87,28 @@ func (u *Uploader) DownloadAndUpload(ctx context.Context, youtubeID string) (str
 
 	// Upload to DO Spaces
 	objectKey := fmt.Sprintf("audio/%s.mp3", youtubeID)
-	log.Printf("⬆️  Uploading to DO Spaces: %s", objectKey)
+	return u.PutObject(ctx, objectKey, audioData.Bytes(), "audio/mpeg")
+}
+
+// PutObject uploads arbitrary bytes to DO Spaces under the given key and
+// returns the permanent CDN URL. Shared by DownloadAndUpload (audio) and
+// any caller uploading other media (e.g. profile avatars).
+func (u *Uploader) PutObject(ctx context.Context, key string, data []byte, contentType string) (string, error) {
+	log.Printf("⬆️  Uploading to DO Spaces: %s", key)
 
 	_, err := u.s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(u.bucket),
-		Key:         aws.String(objectKey),
-		Body:        bytes.NewReader(audioData.Bytes()),
-		ContentType: aws.String("audio/mpeg"),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(data),
+		ContentType: aws.String(contentType),
 		ACL:         "public-read",
 	})
 	if err != nil {
 		return "", fmt.Errorf("S3 upload failed: %w", err)
 	}
 
-	cdnURL := fmt.Sprintf("%s/%s", strings.TrimRight(u.cdnBaseURL, "/"), objectKey)
-	log.Printf("🌐 Track live at CDN: %s", cdnURL)
+	cdnURL := fmt.Sprintf("%s/%s", strings.TrimRight(u.cdnBaseURL, "/"), key)
+	log.Printf("🌐 Live at CDN: %s", cdnURL)
 
 	return cdnURL, nil
 }

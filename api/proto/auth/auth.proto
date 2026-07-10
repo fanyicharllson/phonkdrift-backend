@@ -17,6 +17,15 @@ service AuthService {
   rpc ResetPassword (ResetPasswordRequest) returns (ResetPasswordResponse);
   rpc VerifyResetCode (VerifyResetCodeRequest) returns (VerifyResetCodeResponse);
 
+  // Profile management
+  rpc UploadAvatar (UploadAvatarRequest) returns (UploadAvatarResponse);
+  rpc ChangePassword (ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc UpdateUsername (UpdateUsernameRequest) returns (UpdateUsernameResponse);
+
+  // Feedback
+  rpc SubmitFeedback (SubmitFeedbackRequest) returns (SubmitFeedbackResponse);
+  rpc ListFeedbackAdmin (ListFeedbackAdminRequest) returns (ListFeedbackAdminResponse);
+
   // Admin operations
   rpc BanUser (BanUserRequest) returns (BanUserResponse);
   rpc UnbanUser (UnbanUserRequest) returns (UnbanUserResponse);
@@ -140,6 +149,66 @@ message VerifyResetCodeRequest {
 message VerifyResetCodeResponse {
     bool success = 1;
     string reset_token = 2; // Short-lived token purely for password updating
+}
+
+//  — Profile management
+message UploadAvatarRequest {
+  string user_id    = 1;
+  string avatar_url = 2; // gateway already uploaded to DO Spaces; this just persists the URL
+}
+message UploadAvatarResponse {
+  bool   success    = 1;
+  string avatar_url = 2;
+}
+
+message ChangePasswordRequest {
+  string user_id      = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+message ChangePasswordResponse {
+  bool   success = 1;
+  string message = 2;
+}
+
+message UpdateUsernameRequest {
+  string user_id      = 1;
+  string new_username = 2;
+}
+message UpdateUsernameResponse {
+  bool   success = 1;
+  User   user    = 2;
+}
+
+//  — Feedback
+message SubmitFeedbackRequest {
+  string user_id     = 1;
+  int32  rating       = 2;
+  string comment      = 3;
+  string app_version  = 4;
+}
+message SubmitFeedbackResponse {
+  bool   success     = 1;
+  string feedback_id = 2;
+}
+
+message FeedbackEntry {
+  string feedback_id = 1;
+  string user_id     = 2;
+  string username    = 3;
+  string email       = 4;
+  int32  rating      = 5;
+  string comment     = 6;
+  string app_version = 7;
+  int64  created_at  = 8;
+}
+message ListFeedbackAdminRequest {
+  int32 page  = 1;
+  int32 limit = 2;
+}
+message ListFeedbackAdminResponse {
+  repeated FeedbackEntry feedback = 1;
+  int32 total                     = 2;
 }
 
 //  — Admin Ban System

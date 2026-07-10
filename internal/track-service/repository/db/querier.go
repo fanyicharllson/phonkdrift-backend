@@ -35,6 +35,7 @@ type Querier interface {
 	SyncPlaybackTelemetry(ctx context.Context, arg SyncPlaybackTelemetryParams) error
 	ToggleFeatureTrack(ctx context.Context, arg ToggleFeatureTrackParams) error
 	UpdateTrackStats(ctx context.Context, arg UpdateTrackStatsParams) error
+	UpdateTrackStorageURL(ctx context.Context, arg UpdateTrackStorageURLParams) error
 }
 
 var _ Querier = (*Queries)(nil)

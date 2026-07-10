@@ -15,7 +15,10 @@ import (
 
 const fcmV1URL = "https://fcm.googleapis.com/v1/projects/%s/messages:send"
 
-func sendFCMNotifications(tokens []string, title, body, dataType, dataID string) (int, error) {
+// SendFCMNotifications sends a push notification via FCM's HTTP v1 API to each
+// token in tokens. Exported so other packages (e.g. the avatar-upload worker)
+// can trigger pushes without going through the full AuthUseCase.
+func SendFCMNotifications(tokens []string, title, body, dataType, dataID string) (int, error) {
 	projectID, accessToken, err := getFCMAccessToken()
 	if err != nil {
 		return 0, fmt.Errorf("FCM auth failed: %w", err)

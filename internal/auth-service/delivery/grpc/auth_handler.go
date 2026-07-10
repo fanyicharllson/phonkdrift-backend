@@ -140,6 +140,84 @@ func (h *AuthGRPCHandler) UpdateProfile(ctx context.Context, req *authpb.UpdateP
 	}, nil
 }
 
+func (h *AuthGRPCHandler) UploadAvatar(ctx context.Context, req *authpb.UploadAvatarRequest) (*authpb.UploadAvatarResponse, error) {
+	if req.GetAvatarUrl() == "" {
+		return nil, status.Error(codes.InvalidArgument, "avatar_url is required")
+	}
+	if err := h.useCase.UploadAvatar(ctx, req.GetUserId(), req.GetAvatarUrl()); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	return &authpb.UploadAvatarResponse{
+		Success:   true,
+		AvatarUrl: req.GetAvatarUrl(),
+	}, nil
+}
+
+func (h *AuthGRPCHandler) ChangePassword(ctx context.Context, req *authpb.ChangePasswordRequest) (*authpb.ChangePasswordResponse, error) {
+	err := h.useCase.ChangePassword(ctx, req.GetUserId(), req.GetOldPassword(), req.GetNewPassword())
+	if err != nil {
+		if err.Error() == "incorrect current password" {
+			return nil, status.Error(codes.PermissionDenied, err.Error())
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	return &authpb.ChangePasswordResponse{
+		Success: true,
+		Message: "Password changed successfully",
+	}, nil
+}
+
+func (h *AuthGRPCHandler) UpdateUsername(ctx context.Context, req *authpb.UpdateUsernameRequest) (*authpb.UpdateUsernameResponse, error) {
+	user, err := h.useCase.UpdateUsername(ctx, req.GetUserId(), req.GetNewUsername())
+	if err != nil {
+		if errors.Is(err, domain.ErrUsernameTaken) {
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	return &authpb.UpdateUsernameResponse{
+		Success: true,
+		User:    userToProto(user),
+	}, nil
+}
+
+func (h *AuthGRPCHandler) SubmitFeedback(ctx context.Context, req *authpb.SubmitFeedbackRequest) (*authpb.SubmitFeedbackResponse, error) {
+	feedback, err := h.useCase.SubmitFeedback(ctx, req.GetUserId(), req.GetRating(), req.GetComment(), req.GetAppVersion())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	return &authpb.SubmitFeedbackResponse{
+		Success:    true,
+		FeedbackId: feedback.ID,
+	}, nil
+}
+
+func (h *AuthGRPCHandler) ListFeedbackAdmin(ctx context.Context, req *authpb.ListFeedbackAdminRequest) (*authpb.ListFeedbackAdminResponse, error) {
+	feedback, total, err := h.useCase.ListFeedback(ctx, req.GetPage(), req.GetLimit())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list feedback: %v", err)
+	}
+
+	entries := make([]*authpb.FeedbackEntry, 0, len(feedback))
+	for _, f := range feedback {
+		entries = append(entries, &authpb.FeedbackEntry{
+			FeedbackId: f.ID,
+			UserId:     f.UserID,
+			Username:   f.Username,
+			Email:      f.Email,
+			Rating:     f.Rating,
+			Comment:    f.Comment,
+			AppVersion: f.AppVersion,
+			CreatedAt:  f.CreatedAt.Unix(),
+		})
+	}
+
+	return &authpb.ListFeedbackAdminResponse{
+		Feedback: entries,
+		Total:    int32(total),
+	}, nil
+}
+
 func (h *AuthGRPCHandler) ForgotPassword(ctx context.Context, req *authpb.ForgotPasswordRequest) (*authpb.ForgotPasswordResponse, error) {
 	err := h.useCase.ForgotPassword(ctx, req.GetEmail())
 	if err != nil {

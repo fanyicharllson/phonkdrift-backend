@@ -9,6 +9,7 @@ import (
 	grpcDelivery "github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/delivery/grpc"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/repository"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/usecase"
+	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/workers"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/config"
 	"github.com/rabbitmq/amqp091-go"
 	"google.golang.org/grpc"
@@ -94,6 +95,11 @@ func main() {
 	authRepo := repository.NewAuthRepository(db)
 	eventPub := repository.NewEventPublisher(ch)
 	authUseCase := usecase.NewAuthUseCase(authRepo, eventPub)
+
+	// Avatar upload worker: consumes profile.avatar_updated events (published after
+	// the gateway has already uploaded the image to DO Spaces) and persists the URL + FCM push
+	avatarWorker := workers.NewAvatarWorker(ch, authRepo)
+	avatarWorker.Start()
 
 	// Fire up the TCP Network Listener
 	address := ":" + cfg.AuthGrpcPort

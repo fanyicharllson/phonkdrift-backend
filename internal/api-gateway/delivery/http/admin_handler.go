@@ -44,6 +44,9 @@ func RegisterAdminRoutes(
 		// Stats
 		admin.GET("/stats", handleGetStats(trackClient, authClient))
 
+		// Feedback
+		admin.GET("/feedback", handleListFeedbackAdmin(authClient))
+
 		// Manual discovery trigger
 		admin.POST("/discovery/run", handleRunDiscovery(scheduler))
 	}
@@ -349,6 +352,32 @@ func handleGetStats(trackClient trackpb.TrackServiceClient, authClient authpb.Au
 		}
 
 		c.JSON(http.StatusOK, stats)
+	}
+}
+
+// ─── FEEDBACK HANDLER ────────────────────────────────────────────────────────
+
+func handleListFeedbackAdmin(authClient authpb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "0"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		res, err := authClient.ListFeedbackAdmin(ctx, &authpb.ListFeedbackAdminRequest{
+			Page:  int32(page),
+			Limit: int32(limit),
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"feedback": res.GetFeedback(),
+			"total":    res.GetTotal(),
+		})
 	}
 }
 

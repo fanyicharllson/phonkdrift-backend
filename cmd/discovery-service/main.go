@@ -12,8 +12,12 @@ import (
 	"github.com/fanyicharllson/phonkdrift-backend/internal/config"
 	"github.com/fanyicharllson/phonkdrift-backend/internal/discovery-service"
 	trackdb "github.com/fanyicharllson/phonkdrift-backend/internal/track-service/repository/db"
+	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
+	"github.com/rabbitmq/amqp091-go"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -70,6 +74,50 @@ func main() {
 
 	repo := trackdb.New(conn)
 
+	// Connect to RabbitMQ Broker with automated fallback protection (same pattern as auth-service)
+	var amqpConn *amqp091.Connection
+	log.Printf("Attempting connection to Primary RabbitMQ Broker... 🌐")
+	amqpConn, err = amqp091.Dial(cfg.RabbitMQURL)
+	if err != nil {
+		log.Printf("⚠️ Primary Message Broker unreachable. Initiating failover fallback...")
+
+		if cfg.RabbitMQFallbackURL == "" {
+			log.Fatalf("Critical: Primary broker failed and no RabbitMQFallbackURL was defined.")
+		}
+
+		maxRetries := 30
+		for i := 1; i <= maxRetries; i++ {
+			log.Printf("Attempting connection to Internal Fallback Broker (Attempt %d/%d)... 🏎️", i, maxRetries)
+			amqpConn, err = amqp091.Dial(cfg.RabbitMQFallbackURL)
+			if err == nil {
+				break
+			}
+			log.Printf("⚠️ Fallback broker not ready yet (connection refused). Retrying in 5 seconds...")
+			time.Sleep(5 * time.Second)
+		}
+
+		if err != nil {
+			log.Fatalf("Critical: Total system blackout. Fallback broker remained unreachable after retries: %v", err)
+		}
+	}
+	defer amqpConn.Close()
+	log.Println("RabbitMQ Event Broker connection safely established! ✓")
+
+	ch, err := amqpConn.Channel()
+	if err != nil {
+		log.Fatalf("Critical: Failed to open an AMQP network channel: %v", err)
+	}
+	defer ch.Close()
+
+	if err := ch.ExchangeDeclare("track.events", "topic", true, false, false, false, nil); err != nil {
+		log.Fatalf("Critical: Failed to declare track.events exchange: %v", err)
+	}
+
+	// On-demand background download worker: fires when track-service persists a
+	// track from a user favorite/playlist-add, independent of the 12h scheduled cycle
+	trackDownloadWorker := discovery.NewTrackDownloadWorker(ch, uploader, repo)
+	trackDownloadWorker.Start()
+
 	// Cycle every 12 hours
 	scheduler := discovery.NewScheduler(worker, uploader, repo, 12*time.Hour)
 
@@ -86,6 +134,21 @@ func main() {
 		log.Println("Shutdown signal received, stopping discovery service gracefully...")
 		cancel()
 	}()
+
+	// Trending notifier: auto-broadcasts a push whenever a track becomes
+	// approved-but-unannounced, on top of the existing manual admin trigger
+	if cfg.AuthServiceAddr != "" {
+		authConn, err := grpc.NewClient(cfg.AuthServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Printf("Warning: Failed to connect to Auth Service for trending notifier: %v", err)
+		} else {
+			authClient := authpb.NewAuthServiceClient(authConn)
+			notifier := discovery.NewTrendingNotifier(repo, authClient, 15*time.Minute)
+			go notifier.Start(ctx)
+		}
+	} else {
+		log.Println("Warning: AUTH_SERVICE_ADDR not set — automatic trending notifications disabled")
+	}
 
 	// Start Scheduler (blocking)
 	scheduler.Start(ctx)

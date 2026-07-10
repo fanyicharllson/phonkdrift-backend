@@ -811,3 +811,17 @@ func (q *Queries) UpdateTrackStats(ctx context.Context, arg UpdateTrackStatsPara
 	_, err := q.db.ExecContext(ctx, updateTrackStats, arg.PlayCountChange, arg.LikesCountChange, arg.TrackID)
 	return err
 }
+
+const updateTrackStorageURL = `-- name: UpdateTrackStorageURL :exec
+UPDATE tracks SET storage_url = $2 WHERE id = $1
+`
+
+type UpdateTrackStorageURLParams struct {
+	ID         string         `json:"id"`
+	StorageUrl sql.NullString `json:"storage_url"`
+}
+
+func (q *Queries) UpdateTrackStorageURL(ctx context.Context, arg UpdateTrackStorageURLParams) error {
+	_, err := q.db.ExecContext(ctx, updateTrackStorageURL, arg.ID, arg.StorageUrl)
+	return err
+}

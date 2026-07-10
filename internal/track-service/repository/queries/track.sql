@@ -113,6 +113,9 @@ INNER JOIN playlist_tracks pt ON t.id = pt.track_id
 WHERE pt.playlist_id = $1
 ORDER BY pt.added_at DESC;
 
+-- name: UpdateTrackStorageURL :exec
+UPDATE tracks SET storage_url = $2 WHERE id = $1;
+
 -- name: GetUserPlaylists :many
 SELECT p.*, COUNT(pt.track_id) AS track_count
 FROM playlists p

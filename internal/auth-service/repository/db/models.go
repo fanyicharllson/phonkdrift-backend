@@ -10,6 +10,15 @@ import (
 	"github.com/google/uuid"
 )
 
+type Feedback struct {
+	ID         uuid.UUID      `json:"id"`
+	UserID     uuid.UUID      `json:"user_id"`
+	Rating     int16          `json:"rating"`
+	Comment    sql.NullString `json:"comment"`
+	AppVersion sql.NullString `json:"app_version"`
+	CreatedAt  sql.NullTime   `json:"created_at"`
+}
+
 type User struct {
 	ID               uuid.UUID      `json:"id"`
 	Username         string         `json:"username"`

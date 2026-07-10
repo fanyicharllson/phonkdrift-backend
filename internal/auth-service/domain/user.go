@@ -2,8 +2,13 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 )
+
+// ErrUsernameTaken is returned when a username change collides with the
+// existing UNIQUE constraint on users.username.
+var ErrUsernameTaken = errors.New("username already taken")
 
 // User represents the core domain entity for a PhonkDrift account
 type User struct {
@@ -45,18 +50,22 @@ type AuthRepository interface {
 	GetUserByID(ctx context.Context, userID string) (*User, error)
 	UpdateUserPhonkLevel(ctx context.Context, userID, phonkLevel string) (*User, error)
 	UpdatePassword(ctx context.Context, userID string, hashedPassword string) error
+	UpdateAvatarURL(ctx context.Context, userID, avatarURL string) (*User, error)
+	UpdateUsername(ctx context.Context, userID, newUsername string) (*User, error)
 	BanUser(ctx context.Context, userID string, reason string) error
 	UnbanUser(ctx context.Context, userID string) error
 	UpdateFCMToken(ctx context.Context, userID string, fcmToken string) error
 	GetAllFCMTokens(ctx context.Context) ([]string, error)
 	CountUsers(ctx context.Context) (int64, error)
 
+	FeedbackRepository
 }
 
 // EventEventPublisher defines the expectations for queuing async tasks (Hexagonal Output Port)
 type EventPublisher interface {
 	PublishUserRegistered(ctx context.Context, username, email, verificationCode string) error
 	PublishUserVerified(ctx context.Context, username, email string) error
+	PublishAvatarUpdated(ctx context.Context, userID, avatarURL string) error
 }
 
 // AuthUseCase defines the core business orchestration entry point (Hexagonal Input Port)
@@ -68,6 +77,9 @@ type AuthUseCase interface {
 	ResendCode(ctx context.Context, email string) error
 	GetUser(ctx context.Context, userID string) (*User, error)
 	UpdateProfile(ctx context.Context, userID, phonkLevel string) (*User, error)
+	UploadAvatar(ctx context.Context, userID, avatarURL string) error
+	ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error
+	UpdateUsername(ctx context.Context, userID, newUsername string) (*User, error)
 	ForgotPassword(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, email, code, newPassword string) error
 	VerifyResetCode(ctx context.Context, email, code string) (bool, error)
@@ -77,4 +89,6 @@ type AuthUseCase interface {
 	GetUserStatus(ctx context.Context, userID string) (*User, error)
 	SendPushNotification(ctx context.Context, title, body, targetUserID, dataType, dataID string) (int, error)
 	GetUserCount(ctx context.Context) (int64, error)
+	SubmitFeedback(ctx context.Context, userID string, rating int32, comment, appVersion string) (*Feedback, error)
+	ListFeedback(ctx context.Context, page, limit int32) ([]*Feedback, int64, error)
 }

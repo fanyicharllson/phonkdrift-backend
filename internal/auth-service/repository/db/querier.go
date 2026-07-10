@@ -13,18 +13,23 @@ import (
 
 type Querier interface {
 	BanUser(ctx context.Context, arg BanUserParams) error
+	CountFeedback(ctx context.Context) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
+	CreateFeedback(ctx context.Context, arg CreateFeedbackParams) (Feedback, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	GetUserByEmail(ctx context.Context, dollar_1 string) (User, error)
 	GetUserByID(ctx context.Context, dollar_1 uuid.UUID) (User, error)
 	GetUserFCMTokens(ctx context.Context) ([]sql.NullString, error)
 	GetVerificationDetails(ctx context.Context, dollar_1 string) (GetVerificationDetailsRow, error)
+	ListFeedbackAdmin(ctx context.Context, arg ListFeedbackAdminParams) ([]ListFeedbackAdminRow, error)
 	UnbanUser(ctx context.Context, id uuid.UUID) error
+	UpdateAvatarURL(ctx context.Context, arg UpdateAvatarURLParams) (User, error)
 	UpdateFCMToken(ctx context.Context, arg UpdateFCMTokenParams) error
 	UpdatePassword(ctx context.Context, arg UpdatePasswordParams) error
 	UpdateUserPhonkLevel(ctx context.Context, arg UpdateUserPhonkLevelParams) (User, error)
 	UpdateUserVerification(ctx context.Context, arg UpdateUserVerificationParams) (User, error)
 	UpdateUserVerificationCode(ctx context.Context, arg UpdateUserVerificationCodeParams) error
+	UpdateUsername(ctx context.Context, arg UpdateUsernameParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)

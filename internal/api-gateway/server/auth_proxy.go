@@ -39,7 +39,28 @@ func (s *GatewayServer) GetUser(ctx context.Context, req *authpb.GetUserRequest)
 }
 
 func (s *GatewayServer) UpdateProfile(ctx context.Context, req *authpb.UpdateProfileRequest) (*authpb.UpdateProfileResponse, error) {
+	req.UserId = verifiedUserID(ctx)
 	return s.AuthClient.UpdateProfile(ctx, req)
+}
+
+func (s *GatewayServer) UploadAvatar(ctx context.Context, req *authpb.UploadAvatarRequest) (*authpb.UploadAvatarResponse, error) {
+	req.UserId = verifiedUserID(ctx)
+	return s.AuthClient.UploadAvatar(ctx, req)
+}
+
+func (s *GatewayServer) ChangePassword(ctx context.Context, req *authpb.ChangePasswordRequest) (*authpb.ChangePasswordResponse, error) {
+	req.UserId = verifiedUserID(ctx)
+	return s.AuthClient.ChangePassword(ctx, req)
+}
+
+func (s *GatewayServer) UpdateUsername(ctx context.Context, req *authpb.UpdateUsernameRequest) (*authpb.UpdateUsernameResponse, error) {
+	req.UserId = verifiedUserID(ctx)
+	return s.AuthClient.UpdateUsername(ctx, req)
+}
+
+func (s *GatewayServer) SubmitFeedback(ctx context.Context, req *authpb.SubmitFeedbackRequest) (*authpb.SubmitFeedbackResponse, error) {
+	req.UserId = verifiedUserID(ctx)
+	return s.AuthClient.SubmitFeedback(ctx, req)
 }
 
 func (s *GatewayServer) ForgotPassword(ctx context.Context, req *authpb.ForgotPasswordRequest) (*authpb.ForgotPasswordResponse, error) {

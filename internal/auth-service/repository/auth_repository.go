@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,7 +11,11 @@ import (
 	"github.com/fanyicharllson/phonkdrift-backend/internal/auth-service/repository/db"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
+
+// uniqueViolationCode is the Postgres error code for a UNIQUE constraint violation.
+const uniqueViolationCode = "23505"
 
 type authRepository struct {
 	queries *db.Queries
@@ -220,4 +225,105 @@ func (r *authRepository) GetAllFCMTokens(ctx context.Context) ([]string, error) 
 		}
 	}
 	return tokens, nil
+}
+
+func (r *authRepository) UpdateAvatarURL(ctx context.Context, userID, avatarURL string) (*domain.User, error) {
+	parsedUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user uuid structure: %w", err)
+	}
+
+	user, err := r.queries.UpdateAvatarURL(ctx, db.UpdateAvatarURLParams{
+		ID:        parsedUUID,
+		AvatarUrl: sql.NullString{String: avatarURL, Valid: true},
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return mapSQLCUser(user), nil
+}
+
+func (r *authRepository) UpdateUsername(ctx context.Context, userID, newUsername string) (*domain.User, error) {
+	parsedUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user uuid structure: %w", err)
+	}
+
+	user, err := r.queries.UpdateUsername(ctx, db.UpdateUsernameParams{
+		ID:       parsedUUID,
+		Username: newUsername,
+	})
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == uniqueViolationCode {
+			return nil, domain.ErrUsernameTaken
+		}
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return mapSQLCUser(user), nil
+}
+
+func (r *authRepository) CreateFeedback(ctx context.Context, userID string, rating int32, comment, appVersion string) (*domain.Feedback, error) {
+	parsedUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user uuid structure: %w", err)
+	}
+
+	row, err := r.queries.CreateFeedback(ctx, db.CreateFeedbackParams{
+		UserID:     parsedUUID,
+		Rating:     int16(rating),
+		Comment:    sql.NullString{String: comment, Valid: comment != ""},
+		AppVersion: sql.NullString{String: appVersion, Valid: appVersion != ""},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.Feedback{
+		ID:         row.ID.String(),
+		UserID:     row.UserID.String(),
+		Rating:     int32(row.Rating),
+		Comment:    row.Comment.String,
+		AppVersion: row.AppVersion.String,
+		CreatedAt:  row.CreatedAt.Time,
+	}, nil
+}
+
+func (r *authRepository) ListFeedback(ctx context.Context, page, limit int32) ([]*domain.Feedback, int64, error) {
+	rows, err := r.queries.ListFeedbackAdmin(ctx, db.ListFeedbackAdminParams{
+		Limit:   limit,
+		Column2: page,
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total, err := r.queries.CountFeedback(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	feedback := make([]*domain.Feedback, 0, len(rows))
+	for _, row := range rows {
+		feedback = append(feedback, &domain.Feedback{
+			ID:         row.ID.String(),
+			UserID:     row.UserID.String(),
+			Username:   row.Username,
+			Email:      row.Email,
+			Rating:     int32(row.Rating),
+			Comment:    row.Comment.String,
+			AppVersion: row.AppVersion.String,
+			CreatedAt:  row.CreatedAt.Time,
+		})
+	}
+
+	return feedback, total, nil
 }

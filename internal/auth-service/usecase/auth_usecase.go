@@ -230,6 +230,97 @@ func (u *authUseCase) UpdateProfile(ctx context.Context, userID, phonkLevel stri
 	return user, nil
 }
 
+func (u *authUseCase) UploadAvatar(ctx context.Context, userID, avatarURL string) error {
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return errors.New("user_id is required")
+	}
+	if avatarURL == "" {
+		return errors.New("avatar_url is required")
+	}
+
+	return u.publisher.PublishAvatarUpdated(ctx, userID, avatarURL)
+}
+
+func (u *authUseCase) ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
+	if len(newPassword) < 6 {
+		return errors.New("new password must be at least 6 characters long")
+	}
+
+	user, err := u.repo.GetUserByID(ctx, userID)
+	if err != nil || user == nil {
+		return errors.New("user not found")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword)); err != nil {
+		return errors.New("incorrect current password")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	if err := u.repo.UpdatePassword(ctx, userID, string(hashedPassword)); err != nil {
+		return fmt.Errorf("failed to save new password: %w", err)
+	}
+
+	return nil
+}
+
+func (u *authUseCase) UpdateUsername(ctx context.Context, userID, newUsername string) (*domain.User, error) {
+	newUsername = strings.TrimSpace(newUsername)
+	if len(newUsername) < 3 || len(newUsername) > 50 {
+		return nil, errors.New("username must be between 3 and 50 characters")
+	}
+	for _, r := range newUsername {
+		if !(r == '_' || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')) {
+			return nil, errors.New("username may only contain letters, numbers, and underscores")
+		}
+	}
+
+	user, err := u.repo.UpdateUsername(ctx, userID, newUsername)
+	if err != nil {
+		if errors.Is(err, domain.ErrUsernameTaken) {
+			return nil, domain.ErrUsernameTaken
+		}
+		return nil, fmt.Errorf("failed to update username: %w", err)
+	}
+	if user == nil {
+		return nil, errors.New("user profile not found")
+	}
+
+	return user, nil
+}
+
+func (u *authUseCase) SubmitFeedback(ctx context.Context, userID string, rating int32, comment, appVersion string) (*domain.Feedback, error) {
+	if rating < 1 || rating > 5 {
+		return nil, errors.New("rating must be between 1 and 5")
+	}
+	comment = strings.TrimSpace(comment)
+	if len(comment) > 1000 {
+		comment = comment[:1000]
+	}
+
+	feedback, err := u.repo.CreateFeedback(ctx, userID, rating, comment, appVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save feedback: %w", err)
+	}
+
+	return feedback, nil
+}
+
+func (u *authUseCase) ListFeedback(ctx context.Context, page, limit int32) ([]*domain.Feedback, int64, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if page < 0 {
+		page = 0
+	}
+
+	return u.repo.ListFeedback(ctx, page, limit)
+}
+
 func (u *authUseCase) ForgotPassword(ctx context.Context, email string) error {
 	user, err := u.repo.GetUserByEmail(ctx, strings.ToLower(strings.TrimSpace(email)))
 	if err != nil || user == nil {
@@ -341,7 +432,7 @@ func (u *authUseCase) SendPushNotification(ctx context.Context, title, body, tar
 		return 0, nil
 	}
 
-	sentCount, err := sendFCMNotifications(tokens, title, body, dataType, dataID)
+	sentCount, err := SendFCMNotifications(tokens, title, body, dataType, dataID)
 	if err != nil {
 		return 0, err
 	}

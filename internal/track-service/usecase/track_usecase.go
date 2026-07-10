@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/fanyicharllson/phonkdrift-backend/internal/track-service/repository"
 	db "github.com/fanyicharllson/phonkdrift-backend/internal/track-service/repository/db"
 	trackpb "github.com/fanyicharllson/phonkdrift-backend/pb/track"
 	"github.com/google/uuid"
@@ -49,14 +51,16 @@ type trackUsecase struct {
 	rdb         *redis.Client
 	ytAPIKey    string
 	cookiesPath string
+	publisher   *repository.TrackEventPublisher
 }
 
-func NewTrackUsecase(repo db.Querier, rdb *redis.Client, ytAPIKey string, cookiesPath string) TrackUsecase {
+func NewTrackUsecase(repo db.Querier, rdb *redis.Client, ytAPIKey string, cookiesPath string, publisher *repository.TrackEventPublisher) TrackUsecase {
 	return &trackUsecase{
 		repo:        repo,
 		rdb:         rdb,
 		ytAPIKey:    ytAPIKey,
 		cookiesPath: cookiesPath,
+		publisher:   publisher,
 	}
 }
 
@@ -224,6 +228,141 @@ func (u *trackUsecase) searchYouTube(ctx context.Context, query string) ([]*trac
 	return tracks, nil
 }
 
+// ensureTrackPersisted makes sure trackID exists as a real row in the tracks
+// table before a favorite/playlist-add tries to reference it. Ephemeral
+// YouTube search results carry a "yt-<videoID>" trackID that's never been
+// persisted — inserting one here (idempotently) is what fixes the FK
+// violation that previously surfaced as "could not add to playlist".
+func (u *trackUsecase) ensureTrackPersisted(ctx context.Context, trackID string) error {
+	const ytPrefix = "yt-"
+	if !strings.HasPrefix(trackID, ytPrefix) {
+		return nil // native DB track, already persisted
+	}
+	youtubeID := strings.TrimPrefix(trackID, ytPrefix)
+
+	if _, err := u.repo.GetTrack(ctx, trackID); err == nil {
+		return nil // already persisted (e.g. a previous favorite/playlist-add did this)
+	}
+
+	meta, err := u.fetchVideoMetadataByID(ctx, youtubeID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch video metadata: %w", err)
+	}
+
+	_, err = u.repo.InsertTrack(ctx, db.InsertTrackParams{
+		ID:           trackID,
+		Title:        meta.Title,
+		ArtistID:     "system",
+		ArtistName:   meta.ArtistName,
+		Duration:     meta.Duration,
+		ThumbnailUrl: meta.ThumbnailURL,
+		YoutubeID:    youtubeID,
+		StorageUrl:   sql.NullString{Valid: false},
+		Genre:        sql.NullString{String: "phonk", Valid: true},
+		Source:       "user_favorited",
+		IsApproved:   false,
+		YtViewCount:  sql.NullInt64{Int64: 0, Valid: true},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to insert track: %w", err)
+	}
+
+	if u.publisher != nil {
+		if err := u.publisher.PublishTrackDiscovered(ctx, trackID, youtubeID); err != nil {
+			// Non-fatal: the track stays fully playable via the yt-dlp streaming
+			// fallback in GetAudioStream even if the background download never fires.
+			fmt.Printf("⚠️ failed to publish track.discovered for %s: %v\n", trackID, err)
+		}
+	}
+
+	return nil
+}
+
+type ytVideoMeta struct {
+	Title        string
+	ArtistName   string
+	ThumbnailURL string
+	Duration     string
+}
+
+// fetchVideoMetadataByID calls YouTube's videos.list (≈1 quota unit) to fetch
+// metadata for a single known video ID — far cheaper than another search.list
+// call (100 units), used because at this point we already know the exact ID.
+func (u *trackUsecase) fetchVideoMetadataByID(ctx context.Context, youtubeID string) (*ytVideoMeta, error) {
+	url := fmt.Sprintf(
+		"https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=%s&key=%s",
+		youtubeID, u.ytAPIKey,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := (&http.Client{Timeout: 8 * time.Second}).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var ytResp struct {
+		Items []struct {
+			Snippet struct {
+				Title        string `json:"title"`
+				ChannelTitle string `json:"channelTitle"`
+				Thumbnails   struct {
+					High struct {
+						URL string `json:"url"`
+					} `json:"high"`
+				} `json:"thumbnails"`
+			} `json:"snippet"`
+			ContentDetails struct {
+				Duration string `json:"duration"`
+			} `json:"contentDetails"`
+		} `json:"items"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&ytResp); err != nil {
+		return nil, err
+	}
+	if len(ytResp.Items) == 0 {
+		return nil, fmt.Errorf("video %s not found", youtubeID)
+	}
+
+	item := ytResp.Items[0]
+	return &ytVideoMeta{
+		Title:        item.Snippet.Title,
+		ArtistName:   item.Snippet.ChannelTitle,
+		ThumbnailURL: item.Snippet.Thumbnails.High.URL,
+		Duration:     parseISO8601Duration(item.ContentDetails.Duration),
+	}, nil
+}
+
+// parseISO8601Duration converts YouTube's "PT#M#S"-style duration into "MM:SS".
+// Falls back to "00:00" for anything it can't parse (e.g. hour-long lives).
+func parseISO8601Duration(iso string) string {
+	iso = strings.TrimPrefix(iso, "PT")
+	var hours, minutes, seconds int
+	var num strings.Builder
+	for _, r := range iso {
+		switch {
+		case r >= '0' && r <= '9':
+			num.WriteRune(r)
+		case r == 'H':
+			hours, _ = strconv.Atoi(num.String())
+			num.Reset()
+		case r == 'M':
+			minutes, _ = strconv.Atoi(num.String())
+			num.Reset()
+		case r == 'S':
+			seconds, _ = strconv.Atoi(num.String())
+			num.Reset()
+		}
+	}
+	totalMinutes := hours*60 + minutes
+	return fmt.Sprintf("%02d:%02d", totalMinutes, seconds)
+}
+
 func (u *trackUsecase) GetTrending(ctx context.Context, limit int32) ([]*trackpb.TrackMetadata, error) {
 	cacheKey := fmt.Sprintf("catalog:trending:%d", limit)
 
@@ -347,6 +486,10 @@ func (u *trackUsecase) SetInteraction(ctx context.Context, userID string, trackI
 		return fmt.Errorf("invalid user uuid format: %w", err)
 	}
 
+	if err := u.ensureTrackPersisted(ctx, trackID); err != nil {
+		return fmt.Errorf("failed to persist track before interaction: %w", err)
+	}
+
 	err = u.repo.SetTrackInteraction(ctx, db.SetTrackInteractionParams{
 		UserID:  userUUID,
 		TrackID: trackID,
@@ -407,6 +550,10 @@ func (u *trackUsecase) AddTrackToPlaylist(ctx context.Context, playlistID string
 	}
 	if playlist.UserID.String() != requesterID {
 		return ErrPlaylistAccessDenied
+	}
+
+	if err := u.ensureTrackPersisted(ctx, trackID); err != nil {
+		return fmt.Errorf("failed to persist track before playlist add: %w", err)
 	}
 
 	return u.repo.AddTrackToPlaylist(ctx, db.AddTrackToPlaylistParams{

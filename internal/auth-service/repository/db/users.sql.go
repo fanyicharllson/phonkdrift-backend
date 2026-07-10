@@ -208,6 +208,41 @@ func (q *Queries) UnbanUser(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const updateAvatarURL = `-- name: UpdateAvatarURL :one
+UPDATE users
+SET avatar_url = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at, is_banned, banned_at, ban_reason, fcm_token
+`
+
+type UpdateAvatarURLParams struct {
+	ID        uuid.UUID      `json:"id"`
+	AvatarUrl sql.NullString `json:"avatar_url"`
+}
+
+func (q *Queries) UpdateAvatarURL(ctx context.Context, arg UpdateAvatarURLParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateAvatarURL, arg.ID, arg.AvatarUrl)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.AvatarUrl,
+		&i.PhonkLevel,
+		&i.IsVerified,
+		&i.VerificationCode,
+		&i.CodeExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.IsBanned,
+		&i.BannedAt,
+		&i.BanReason,
+		&i.FcmToken,
+	)
+	return i, err
+}
+
 const updateFCMToken = `-- name: UpdateFCMToken :exec
 UPDATE users SET fcm_token = $2 WHERE id = $1
 `
@@ -331,4 +366,39 @@ type UpdateUserVerificationCodeParams struct {
 func (q *Queries) UpdateUserVerificationCode(ctx context.Context, arg UpdateUserVerificationCodeParams) error {
 	_, err := q.db.ExecContext(ctx, updateUserVerificationCode, arg.VerificationCode, arg.CodeExpiresAt, arg.Email)
 	return err
+}
+
+const updateUsername = `-- name: UpdateUsername :one
+UPDATE users
+SET username = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, username, email, password_hash, avatar_url, phonk_level, is_verified, verification_code, code_expires_at, created_at, updated_at, is_banned, banned_at, ban_reason, fcm_token
+`
+
+type UpdateUsernameParams struct {
+	ID       uuid.UUID `json:"id"`
+	Username string    `json:"username"`
+}
+
+func (q *Queries) UpdateUsername(ctx context.Context, arg UpdateUsernameParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUsername, arg.ID, arg.Username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.AvatarUrl,
+		&i.PhonkLevel,
+		&i.IsVerified,
+		&i.VerificationCode,
+		&i.CodeExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.IsBanned,
+		&i.BannedAt,
+		&i.BanReason,
+		&i.FcmToken,
+	)
+	return i, err
 }

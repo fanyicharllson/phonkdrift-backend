@@ -29,6 +29,11 @@ const (
 	AuthService_ForgotPassword_FullMethodName       = "/auth.AuthService/ForgotPassword"
 	AuthService_ResetPassword_FullMethodName        = "/auth.AuthService/ResetPassword"
 	AuthService_VerifyResetCode_FullMethodName      = "/auth.AuthService/VerifyResetCode"
+	AuthService_UploadAvatar_FullMethodName         = "/auth.AuthService/UploadAvatar"
+	AuthService_ChangePassword_FullMethodName       = "/auth.AuthService/ChangePassword"
+	AuthService_UpdateUsername_FullMethodName       = "/auth.AuthService/UpdateUsername"
+	AuthService_SubmitFeedback_FullMethodName       = "/auth.AuthService/SubmitFeedback"
+	AuthService_ListFeedbackAdmin_FullMethodName    = "/auth.AuthService/ListFeedbackAdmin"
 	AuthService_BanUser_FullMethodName              = "/auth.AuthService/BanUser"
 	AuthService_UnbanUser_FullMethodName            = "/auth.AuthService/UnbanUser"
 	AuthService_SendPushNotification_FullMethodName = "/auth.AuthService/SendPushNotification"
@@ -53,6 +58,13 @@ type AuthServiceClient interface {
 	ForgotPassword(ctx context.Context, in *ForgotPasswordRequest, opts ...grpc.CallOption) (*ForgotPasswordResponse, error)
 	ResetPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*ResetPasswordResponse, error)
 	VerifyResetCode(ctx context.Context, in *VerifyResetCodeRequest, opts ...grpc.CallOption) (*VerifyResetCodeResponse, error)
+	// Profile management
+	UploadAvatar(ctx context.Context, in *UploadAvatarRequest, opts ...grpc.CallOption) (*UploadAvatarResponse, error)
+	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error)
+	UpdateUsername(ctx context.Context, in *UpdateUsernameRequest, opts ...grpc.CallOption) (*UpdateUsernameResponse, error)
+	// Feedback
+	SubmitFeedback(ctx context.Context, in *SubmitFeedbackRequest, opts ...grpc.CallOption) (*SubmitFeedbackResponse, error)
+	ListFeedbackAdmin(ctx context.Context, in *ListFeedbackAdminRequest, opts ...grpc.CallOption) (*ListFeedbackAdminResponse, error)
 	// Admin operations
 	BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error)
 	UnbanUser(ctx context.Context, in *UnbanUserRequest, opts ...grpc.CallOption) (*UnbanUserResponse, error)
@@ -171,6 +183,56 @@ func (c *authServiceClient) VerifyResetCode(ctx context.Context, in *VerifyReset
 	return out, nil
 }
 
+func (c *authServiceClient) UploadAvatar(ctx context.Context, in *UploadAvatarRequest, opts ...grpc.CallOption) (*UploadAvatarResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UploadAvatarResponse)
+	err := c.cc.Invoke(ctx, AuthService_UploadAvatar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangePasswordResponse)
+	err := c.cc.Invoke(ctx, AuthService_ChangePassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) UpdateUsername(ctx context.Context, in *UpdateUsernameRequest, opts ...grpc.CallOption) (*UpdateUsernameResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateUsernameResponse)
+	err := c.cc.Invoke(ctx, AuthService_UpdateUsername_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) SubmitFeedback(ctx context.Context, in *SubmitFeedbackRequest, opts ...grpc.CallOption) (*SubmitFeedbackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubmitFeedbackResponse)
+	err := c.cc.Invoke(ctx, AuthService_SubmitFeedback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ListFeedbackAdmin(ctx context.Context, in *ListFeedbackAdminRequest, opts ...grpc.CallOption) (*ListFeedbackAdminResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListFeedbackAdminResponse)
+	err := c.cc.Invoke(ctx, AuthService_ListFeedbackAdmin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BanUserResponse)
@@ -247,6 +309,13 @@ type AuthServiceServer interface {
 	ForgotPassword(context.Context, *ForgotPasswordRequest) (*ForgotPasswordResponse, error)
 	ResetPassword(context.Context, *ResetPasswordRequest) (*ResetPasswordResponse, error)
 	VerifyResetCode(context.Context, *VerifyResetCodeRequest) (*VerifyResetCodeResponse, error)
+	// Profile management
+	UploadAvatar(context.Context, *UploadAvatarRequest) (*UploadAvatarResponse, error)
+	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
+	UpdateUsername(context.Context, *UpdateUsernameRequest) (*UpdateUsernameResponse, error)
+	// Feedback
+	SubmitFeedback(context.Context, *SubmitFeedbackRequest) (*SubmitFeedbackResponse, error)
+	ListFeedbackAdmin(context.Context, *ListFeedbackAdminRequest) (*ListFeedbackAdminResponse, error)
 	// Admin operations
 	BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error)
 	UnbanUser(context.Context, *UnbanUserRequest) (*UnbanUserResponse, error)
@@ -294,6 +363,21 @@ func (UnimplementedAuthServiceServer) ResetPassword(context.Context, *ResetPassw
 }
 func (UnimplementedAuthServiceServer) VerifyResetCode(context.Context, *VerifyResetCodeRequest) (*VerifyResetCodeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method VerifyResetCode not implemented")
+}
+func (UnimplementedAuthServiceServer) UploadAvatar(context.Context, *UploadAvatarRequest) (*UploadAvatarResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UploadAvatar not implemented")
+}
+func (UnimplementedAuthServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ChangePassword not implemented")
+}
+func (UnimplementedAuthServiceServer) UpdateUsername(context.Context, *UpdateUsernameRequest) (*UpdateUsernameResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUsername not implemented")
+}
+func (UnimplementedAuthServiceServer) SubmitFeedback(context.Context, *SubmitFeedbackRequest) (*SubmitFeedbackResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SubmitFeedback not implemented")
+}
+func (UnimplementedAuthServiceServer) ListFeedbackAdmin(context.Context, *ListFeedbackAdminRequest) (*ListFeedbackAdminResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListFeedbackAdmin not implemented")
 }
 func (UnimplementedAuthServiceServer) BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BanUser not implemented")
@@ -514,6 +598,96 @@ func _AuthService_VerifyResetCode_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_UploadAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadAvatarRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).UploadAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_UploadAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).UploadAvatar(ctx, req.(*UploadAvatarRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ChangePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangePasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ChangePassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ChangePassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ChangePassword(ctx, req.(*ChangePasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_UpdateUsername_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUsernameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).UpdateUsername(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_UpdateUsername_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).UpdateUsername(ctx, req.(*UpdateUsernameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_SubmitFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitFeedbackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).SubmitFeedback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_SubmitFeedback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).SubmitFeedback(ctx, req.(*SubmitFeedbackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ListFeedbackAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListFeedbackAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ListFeedbackAdmin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ListFeedbackAdmin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ListFeedbackAdmin(ctx, req.(*ListFeedbackAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_BanUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BanUserRequest)
 	if err := dec(in); err != nil {
@@ -668,6 +842,26 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VerifyResetCode",
 			Handler:    _AuthService_VerifyResetCode_Handler,
+		},
+		{
+			MethodName: "UploadAvatar",
+			Handler:    _AuthService_UploadAvatar_Handler,
+		},
+		{
+			MethodName: "ChangePassword",
+			Handler:    _AuthService_ChangePassword_Handler,
+		},
+		{
+			MethodName: "UpdateUsername",
+			Handler:    _AuthService_UpdateUsername_Handler,
+		},
+		{
+			MethodName: "SubmitFeedback",
+			Handler:    _AuthService_SubmitFeedback_Handler,
+		},
+		{
+			MethodName: "ListFeedbackAdmin",
+			Handler:    _AuthService_ListFeedbackAdmin_Handler,
 		},
 		{
 			MethodName: "BanUser",
