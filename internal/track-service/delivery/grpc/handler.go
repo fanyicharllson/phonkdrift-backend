@@ -148,6 +148,25 @@ func (h *TrackGRPCHandler) AddToPlaylist(ctx context.Context, req *trackpb.Playl
 	}, nil
 }
 
+func (h *TrackGRPCHandler) DeletePlaylist(ctx context.Context, req *trackpb.DeletePlaylistRequest) (*trackpb.PlaylistActionResponse, error) {
+	if req.GetPlaylistId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "playlist_id is required")
+	}
+
+	err := h.usecase.DeletePlaylist(ctx, req.GetPlaylistId(), req.GetUserId())
+	if err != nil {
+		if errors.Is(err, usecase.ErrPlaylistAccessDenied) {
+			return nil, status.Error(codes.PermissionDenied, "you do not own this playlist")
+		}
+		return nil, status.Errorf(codes.Internal, "failed to delete playlist: %v", err)
+	}
+
+	return &trackpb.PlaylistActionResponse{
+		Success: true,
+		Message: "Playlist deleted",
+	}, nil
+}
+
 func (h *TrackGRPCHandler) GetPlaylist(ctx context.Context, req *trackpb.GetPlaylistRequest) (*trackpb.GetPlaylistResponse, error) {
 	if req.GetPlaylistId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "playlist_id is required")

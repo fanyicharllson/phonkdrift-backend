@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 const addTrackToPlaylist = `-- name: AddTrackToPlaylist :exec
@@ -62,6 +63,15 @@ func (q *Queries) CreatePlaylist(ctx context.Context, arg CreatePlaylistParams) 
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const deletePlaylist = `-- name: DeletePlaylist :exec
+DELETE FROM playlists WHERE id = $1
+`
+
+func (q *Queries) DeletePlaylist(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deletePlaylist, id)
+	return err
 }
 
 const deleteTrack = `-- name: DeleteTrack :exec
@@ -669,6 +679,15 @@ UPDATE tracks SET fcm_notified = true WHERE id = $1
 
 func (q *Queries) MarkTrackFCMNotified(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, markTrackFCMNotified, id)
+	return err
+}
+
+const markTracksFCMNotified = `-- name: MarkTracksFCMNotified :exec
+UPDATE tracks SET fcm_notified = true WHERE id = ANY($1::text[])
+`
+
+func (q *Queries) MarkTracksFCMNotified(ctx context.Context, ids []string) error {
+	_, err := q.db.ExecContext(ctx, markTracksFCMNotified, pq.Array(ids))
 	return err
 }
 

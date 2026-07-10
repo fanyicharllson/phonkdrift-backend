@@ -21,6 +21,7 @@ service TrackService {
   rpc AddToPlaylist (PlaylistTrackRequest) returns (PlaylistActionResponse);
   rpc GetPlaylist (GetPlaylistRequest) returns (GetPlaylistResponse);
   rpc GetUserPlaylists (GetUserPlaylistsRequest) returns (GetUserPlaylistsResponse);
+  rpc DeletePlaylist (DeletePlaylistRequest) returns (PlaylistActionResponse);
 
   //  — Admin operations
   rpc SeedTrack (SeedTrackRequest) returns (SeedTrackResponse);
@@ -137,6 +138,11 @@ message PlaylistTrackRequest {
 message PlaylistActionResponse {
   bool   success = 1;
   string message = 2;
+}
+
+message DeletePlaylistRequest {
+  string playlist_id = 1;
+  string user_id      = 2; // set by the gateway from the verified session; used for ownership check
 }
 
 message GetPlaylistRequest {

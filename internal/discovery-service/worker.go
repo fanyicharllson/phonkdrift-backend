@@ -61,12 +61,8 @@ func NewWorker(apiKey string) *Worker {
 		apiKey:     apiKey,
 		httpClient: &http.Client{Timeout: 15 * time.Second},
 		queries: []string{
-			"No Way Back - Harpazz [ultra slowed]",
-			"FUNK ESTRELAS (Super Slowed + Reverb)",
-			"REGXRD - ZOMANA-SLOWED + REVERB",
-			"",
-
-			
+			"Montagem funks slowed 2026",
+			"Trending Phonk 2026",
 		},
 	}
 }

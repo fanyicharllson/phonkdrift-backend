@@ -30,6 +30,7 @@ const (
 	TrackService_AddToPlaylist_FullMethodName         = "/track.TrackService/AddToPlaylist"
 	TrackService_GetPlaylist_FullMethodName           = "/track.TrackService/GetPlaylist"
 	TrackService_GetUserPlaylists_FullMethodName      = "/track.TrackService/GetUserPlaylists"
+	TrackService_DeletePlaylist_FullMethodName        = "/track.TrackService/DeletePlaylist"
 	TrackService_SeedTrack_FullMethodName             = "/track.TrackService/SeedTrack"
 	TrackService_ListTracksAdmin_FullMethodName       = "/track.TrackService/ListTracksAdmin"
 	TrackService_ApproveTrack_FullMethodName          = "/track.TrackService/ApproveTrack"
@@ -58,6 +59,7 @@ type TrackServiceClient interface {
 	AddToPlaylist(ctx context.Context, in *PlaylistTrackRequest, opts ...grpc.CallOption) (*PlaylistActionResponse, error)
 	GetPlaylist(ctx context.Context, in *GetPlaylistRequest, opts ...grpc.CallOption) (*GetPlaylistResponse, error)
 	GetUserPlaylists(ctx context.Context, in *GetUserPlaylistsRequest, opts ...grpc.CallOption) (*GetUserPlaylistsResponse, error)
+	DeletePlaylist(ctx context.Context, in *DeletePlaylistRequest, opts ...grpc.CallOption) (*PlaylistActionResponse, error)
 	// — Admin operations
 	SeedTrack(ctx context.Context, in *SeedTrackRequest, opts ...grpc.CallOption) (*SeedTrackResponse, error)
 	ListTracksAdmin(ctx context.Context, in *ListTracksAdminRequest, opts ...grpc.CallOption) (*ListTracksAdminResponse, error)
@@ -188,6 +190,16 @@ func (c *trackServiceClient) GetUserPlaylists(ctx context.Context, in *GetUserPl
 	return out, nil
 }
 
+func (c *trackServiceClient) DeletePlaylist(ctx context.Context, in *DeletePlaylistRequest, opts ...grpc.CallOption) (*PlaylistActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PlaylistActionResponse)
+	err := c.cc.Invoke(ctx, TrackService_DeletePlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *trackServiceClient) SeedTrack(ctx context.Context, in *SeedTrackRequest, opts ...grpc.CallOption) (*SeedTrackResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SeedTrackResponse)
@@ -286,6 +298,7 @@ type TrackServiceServer interface {
 	AddToPlaylist(context.Context, *PlaylistTrackRequest) (*PlaylistActionResponse, error)
 	GetPlaylist(context.Context, *GetPlaylistRequest) (*GetPlaylistResponse, error)
 	GetUserPlaylists(context.Context, *GetUserPlaylistsRequest) (*GetUserPlaylistsResponse, error)
+	DeletePlaylist(context.Context, *DeletePlaylistRequest) (*PlaylistActionResponse, error)
 	// — Admin operations
 	SeedTrack(context.Context, *SeedTrackRequest) (*SeedTrackResponse, error)
 	ListTracksAdmin(context.Context, *ListTracksAdminRequest) (*ListTracksAdminResponse, error)
@@ -338,6 +351,9 @@ func (UnimplementedTrackServiceServer) GetPlaylist(context.Context, *GetPlaylist
 }
 func (UnimplementedTrackServiceServer) GetUserPlaylists(context.Context, *GetUserPlaylistsRequest) (*GetUserPlaylistsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserPlaylists not implemented")
+}
+func (UnimplementedTrackServiceServer) DeletePlaylist(context.Context, *DeletePlaylistRequest) (*PlaylistActionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeletePlaylist not implemented")
 }
 func (UnimplementedTrackServiceServer) SeedTrack(context.Context, *SeedTrackRequest) (*SeedTrackResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SeedTrack not implemented")
@@ -582,6 +598,24 @@ func _TrackService_GetUserPlaylists_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TrackService_DeletePlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePlaylistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).DeletePlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_DeletePlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).DeletePlaylist(ctx, req.(*DeletePlaylistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TrackService_SeedTrack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SeedTrackRequest)
 	if err := dec(in); err != nil {
@@ -776,6 +810,10 @@ var TrackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserPlaylists",
 			Handler:    _TrackService_GetUserPlaylists_Handler,
+		},
+		{
+			MethodName: "DeletePlaylist",
+			Handler:    _TrackService_DeletePlaylist_Handler,
 		},
 		{
 			MethodName: "SeedTrack",

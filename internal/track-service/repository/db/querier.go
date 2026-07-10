@@ -14,6 +14,7 @@ type Querier interface {
 	AddTrackToPlaylist(ctx context.Context, arg AddTrackToPlaylistParams) error
 	ApproveTrack(ctx context.Context, id string) error
 	CreatePlaylist(ctx context.Context, arg CreatePlaylistParams) (Playlist, error)
+	DeletePlaylist(ctx context.Context, id uuid.UUID) error
 	DeleteTrack(ctx context.Context, id string) error
 	DeleteTrackInteraction(ctx context.Context, arg DeleteTrackInteractionParams) error
 	GetAllTracksAdmin(ctx context.Context, arg GetAllTracksAdminParams) ([]Track, error)
@@ -29,6 +30,7 @@ type Querier interface {
 	GetUserPlaylists(ctx context.Context, userID uuid.UUID) ([]GetUserPlaylistsRow, error)
 	InsertTrack(ctx context.Context, arg InsertTrackParams) (Track, error)
 	MarkTrackFCMNotified(ctx context.Context, id string) error
+	MarkTracksFCMNotified(ctx context.Context, ids []string) error
 	RejectTrack(ctx context.Context, id string) error
 	SearchTracks(ctx context.Context, arg SearchTracksParams) ([]Track, error)
 	SetTrackInteraction(ctx context.Context, arg SetTrackInteractionParams) error

@@ -74,10 +74,12 @@ func (n *TrendingNotifier) checkAndNotify(ctx context.Context) {
 		return // leave all fcm_notified=false so the whole batch retries next tick
 	}
 
-	for _, track := range tracks {
-		if err := n.repo.MarkTrackFCMNotified(ctx, track.ID); err != nil {
-			log.Printf("⚠️ Failed to mark track %s as notified: %v", track.ID, err)
-		}
+	ids := make([]string, len(tracks))
+	for i, track := range tracks {
+		ids[i] = track.ID
+	}
+	if err := n.repo.MarkTracksFCMNotified(ctx, ids); err != nil {
+		log.Printf("⚠️ Failed to mark %d track(s) as notified: %v", len(ids), err)
 	}
 
 	log.Printf("✅ Announced %d new track(s) in a single push", len(tracks))

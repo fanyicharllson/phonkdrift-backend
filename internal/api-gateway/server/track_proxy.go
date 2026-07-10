@@ -42,14 +42,17 @@ func (s *GatewayServer) GetTrendingTracks(ctx context.Context, req *trackpb.Tren
 }
 
 func (s *GatewayServer) SyncPlaybackTelemetry(ctx context.Context, req *trackpb.PlaybackTelemetryRequest) (*trackpb.PlaybackTelemetryResponse, error) {
+	req.UserId = verifiedUserID(ctx)
 	return s.trackProxy.client.SyncPlaybackTelemetry(ctx, req)
 }
 
 func (s *GatewayServer) GetRecentlyPlayed(ctx context.Context, req *trackpb.RecentlyPlayedRequest) (*trackpb.RecentlyPlayedResponse, error) {
+	req.UserId = verifiedUserID(ctx)
 	return s.trackProxy.client.GetRecentlyPlayed(ctx, req)
 }
 
 func (s *GatewayServer) SetTrackInteraction(ctx context.Context, req *trackpb.InteractionRequest) (*trackpb.InteractionResponse, error) {
+	req.UserId = verifiedUserID(ctx)
 	return s.trackProxy.client.SetTrackInteraction(ctx, req)
 }
 
@@ -74,6 +77,11 @@ func (s *GatewayServer) AddToPlaylist(ctx context.Context, req *trackpb.Playlist
 func (s *GatewayServer) GetPlaylist(ctx context.Context, req *trackpb.GetPlaylistRequest) (*trackpb.GetPlaylistResponse, error) {
 	req.UserId = verifiedUserID(ctx)
 	return s.trackProxy.client.GetPlaylist(ctx, req)
+}
+
+func (s *GatewayServer) DeletePlaylist(ctx context.Context, req *trackpb.DeletePlaylistRequest) (*trackpb.PlaylistActionResponse, error) {
+	req.UserId = verifiedUserID(ctx)
+	return s.trackProxy.client.DeletePlaylist(ctx, req)
 }
 
 func (s *GatewayServer) GetUserPlaylists(ctx context.Context, req *trackpb.GetUserPlaylistsRequest) (*trackpb.GetUserPlaylistsResponse, error) {
@@ -114,5 +122,6 @@ func (s *GatewayServer) GetAdminStats(ctx context.Context, req *trackpb.Empty) (
 }
 
 func (s *GatewayServer) GetLikedTracks(ctx context.Context, req *trackpb.GetLikedTracksRequest) (*trackpb.GetLikedTracksResponse, error) {
+	req.UserId = verifiedUserID(ctx)
 	return s.trackProxy.client.GetLikedTracks(ctx, req)
 }

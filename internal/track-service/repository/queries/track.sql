@@ -61,6 +61,9 @@ SELECT * FROM tracks ORDER BY created_at DESC LIMIT $1 OFFSET $2;
 -- name: MarkTrackFCMNotified :exec
 UPDATE tracks SET fcm_notified = true WHERE id = $1;
 
+-- name: MarkTracksFCMNotified :exec
+UPDATE tracks SET fcm_notified = true WHERE id = ANY(@ids::text[]);
+
 -- name: GetApprovedUnnotifiedTracks :many
 SELECT * FROM tracks 
 WHERE is_approved = true AND fcm_notified = false
@@ -106,6 +109,9 @@ ON CONFLICT (playlist_id, track_id) DO NOTHING;
 
 -- name: GetPlaylistByID :one
 SELECT * FROM playlists WHERE id = $1 LIMIT 1;
+
+-- name: DeletePlaylist :exec
+DELETE FROM playlists WHERE id = $1;
 
 -- name: GetPlaylistTracks :many
 SELECT t.* FROM tracks t

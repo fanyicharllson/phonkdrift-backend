@@ -34,6 +34,7 @@ type TrackUsecase interface {
 	NewPlaylist(ctx context.Context, userID string, name string, coverURL string) (*trackpb.PlaylistResponse, error)
 	AddTrackToPlaylist(ctx context.Context, playlistID string, trackID string, requesterID string) error
 	GetPlaylist(ctx context.Context, playlistID string, requesterID string) (*trackpb.GetPlaylistResponse, error)
+	DeletePlaylist(ctx context.Context, playlistID string, requesterID string) error
 	GetUserPlaylists(ctx context.Context, userID string) ([]*trackpb.PlaylistSummary, error)
 	GetForYou(ctx context.Context, limit int32) ([]*trackpb.TrackMetadata, error)
 	SeedTrack(ctx context.Context, req *trackpb.SeedTrackRequest) (string, error)
@@ -560,6 +561,27 @@ func (u *trackUsecase) AddTrackToPlaylist(ctx context.Context, playlistID string
 		PlaylistID: playlistUUID,
 		TrackID:    trackID,
 	})
+}
+
+// DeletePlaylist removes the playlist row itself; playlist_tracks has an
+// ON DELETE CASCADE against playlists(id), so its join rows go with it, but
+// the underlying shared tracks catalog is never touched — other users'
+// playlists/favorites referencing the same tracks are unaffected.
+func (u *trackUsecase) DeletePlaylist(ctx context.Context, playlistID string, requesterID string) error {
+	playlistUUID, err := uuid.Parse(playlistID)
+	if err != nil {
+		return fmt.Errorf("invalid playlist uuid: %w", err)
+	}
+
+	playlist, err := u.repo.GetPlaylistByID(ctx, playlistUUID)
+	if err != nil {
+		return fmt.Errorf("playlist not found: %w", err)
+	}
+	if playlist.UserID.String() != requesterID {
+		return ErrPlaylistAccessDenied
+	}
+
+	return u.repo.DeletePlaylist(ctx, playlistUUID)
 }
 
 func (u *trackUsecase) GetPlaylist(ctx context.Context, playlistID string, requesterID string) (*trackpb.GetPlaylistResponse, error) {
