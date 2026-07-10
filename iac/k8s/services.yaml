@@ -67,8 +67,17 @@ spec:
         envFrom:
         - configMapRef:
             name: phonkdrift-config
-        - secretRef:                   
+        - secretRef:
             name: phonkdrift-secrets
+        volumeMounts:
+        - name: ytdlp-cookies
+          mountPath: /app/cookies
+          readOnly: true
+      volumes:
+      - name: ytdlp-cookies
+        secret:
+          secretName: ytdlp-cookies
+          optional: true
 ---
 apiVersion: v1
 kind: Service
@@ -138,6 +147,15 @@ spec:
             name: phonkdrift-config
         - secretRef:
             name: phonkdrift-secrets
+        volumeMounts:
+        - name: ytdlp-cookies
+          mountPath: /app/cookies
+          readOnly: true
+      volumes:
+      - name: ytdlp-cookies
+        secret:
+          secretName: ytdlp-cookies
+          optional: true
 
 ---
 # ==============================================================================
@@ -169,6 +187,15 @@ spec:
             name: phonkdrift-config
         - secretRef:
             name: phonkdrift-secrets
+        volumeMounts:
+        - name: ytdlp-cookies
+          mountPath: /app/cookies
+          readOnly: true
+      volumes:
+      - name: ytdlp-cookies
+        secret:
+          secretName: ytdlp-cookies
+          optional: true
 ---
 apiVersion: v1
 kind: Service

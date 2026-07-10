@@ -51,6 +51,10 @@ type Config struct {
 
 	// CORS — comma-separated list of origins allowed to make credentialed browser requests
 	AllowedOrigins string `mapstructure:"ALLOWED_ORIGINS"`
+
+	// yt-dlp — path to a Netscape-format cookies file used to bypass YouTube bot-detection.
+	// If empty, yt-dlp runs without cookies (current behavior).
+	YtDlpCookiesPath string `mapstructure:"YT_DLP_COOKIES_PATH"`
 }
 
 func LoadConfig() (config Config, err error) {
@@ -72,7 +76,7 @@ func LoadConfig() (config Config, err error) {
 		"DO_SPACES_KEY", "DO_SPACES_SECRET", "DO_SPACES_BUCKET",
 		"DO_SPACES_ENDPOINT", "DO_SPACES_CDN_URL",
 		"YOUTUBE_API_KEY", "FCM_SERVICE_ACCOUNT_JSON", "ADMIN_JWT_SECRET",
-		"ADMIN_ALLOWED_IPS", "ALLOWED_ORIGINS",
+		"ADMIN_ALLOWED_IPS", "ALLOWED_ORIGINS", "YT_DLP_COOKIES_PATH",
 	}
 	for _, key := range envKeys {
 		if err := viper.BindEnv(key); err != nil {

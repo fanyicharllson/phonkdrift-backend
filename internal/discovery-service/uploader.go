@@ -15,12 +15,13 @@ import (
 )
 
 type Uploader struct {
-	s3Client   *s3.Client
-	bucket     string
-	cdnBaseURL string
+	s3Client    *s3.Client
+	bucket      string
+	cdnBaseURL  string
+	cookiesPath string
 }
 
-func NewUploader(accessKey, secret, endpoint, bucket, cdnURL string) (*Uploader, error) {
+func NewUploader(accessKey, secret, endpoint, bucket, cdnURL, cookiesPath string) (*Uploader, error) {
 	customResolver := aws.EndpointResolverWithOptionsFunc(
 		func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 			return aws.Endpoint{URL: endpoint}, nil
@@ -39,9 +40,10 @@ func NewUploader(accessKey, secret, endpoint, bucket, cdnURL string) (*Uploader,
 	}
 
 	return &Uploader{
-		s3Client:   s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = true }),
-		bucket:     bucket,
-		cdnBaseURL: cdnURL,
+		s3Client:    s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = true }),
+		bucket:      bucket,
+		cdnBaseURL:  cdnURL,
+		cookiesPath: cookiesPath,
 	}, nil
 }
 
@@ -52,16 +54,20 @@ func (u *Uploader) DownloadAndUpload(ctx context.Context, youtubeID string) (str
 
 	// yt-dlp: download best audio as mp3 to stdout
 	videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", youtubeID)
-	cmd := exec.CommandContext(ctx, "yt-dlp",
+	args := []string{
 		"-f", "bestaudio",
 		"--extract-audio",
 		"--audio-format", "mp3",
 		"--audio-quality", "0",
 		"--js-runtimes", "node",
 		"--no-playlist",
-		"-o", "-",
-		videoURL,
-	)
+	}
+	if u.cookiesPath != "" {
+		args = append(args, "--cookies", u.cookiesPath)
+	}
+	args = append(args, "-o", "-", videoURL)
+
+	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
 
 	var audioData bytes.Buffer
 	var stderr bytes.Buffer

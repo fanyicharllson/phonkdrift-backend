@@ -62,6 +62,7 @@ func main() {
 		cfg.DOSpacesEndpoint,
 		cfg.DOSpacesBucket,
 		cfg.DOSpacesCDNURL,
+		cfg.YtDlpCookiesPath,
 	)
 	if err != nil {
 		log.Fatalf("Failed to initialize S3 uploader: %v", err)

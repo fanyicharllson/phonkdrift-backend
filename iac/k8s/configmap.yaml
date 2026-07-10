@@ -17,3 +17,4 @@ data:
   DO_SPACES_BUCKET: "phonkdrift-storage"
   DO_SPACES_ENDPOINT: "https://fra1.digitaloceanspaces.com"
   DO_SPACES_CDN_URL: "https://phonkdrift-storage.fra1.cdn.digitaloceanspaces.com"
+  YT_DLP_COOKIES_PATH: "/app/cookies/cookies.txt"

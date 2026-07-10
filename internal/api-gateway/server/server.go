@@ -60,6 +60,7 @@ func Run(cfg *config.Config) error {
 			cfg.DOSpacesEndpoint,
 			cfg.DOSpacesBucket,
 			cfg.DOSpacesCDNURL,
+			cfg.YtDlpCookiesPath,
 		)
 		if err != nil {
 			log.Printf("Warning: Failed to initialize S3 uploader in Gateway: %v", err)

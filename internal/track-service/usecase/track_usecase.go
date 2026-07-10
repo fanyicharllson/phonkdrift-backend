@@ -45,16 +45,18 @@ type TrackUsecase interface {
 }
 
 type trackUsecase struct {
-	repo     db.Querier
-	rdb      *redis.Client
-	ytAPIKey string
+	repo        db.Querier
+	rdb         *redis.Client
+	ytAPIKey    string
+	cookiesPath string
 }
 
-func NewTrackUsecase(repo db.Querier, rdb *redis.Client, ytAPIKey string) TrackUsecase {
+func NewTrackUsecase(repo db.Querier, rdb *redis.Client, ytAPIKey string, cookiesPath string) TrackUsecase {
 	return &trackUsecase{
-		repo:     repo,
-		rdb:      rdb,
-		ytAPIKey: ytAPIKey,
+		repo:        repo,
+		rdb:         rdb,
+		ytAPIKey:    ytAPIKey,
+		cookiesPath: cookiesPath,
 	}
 }
 
@@ -87,8 +89,12 @@ func (u *trackUsecase) GetAudioStream(ctx context.Context, youtubeID string) (st
 		"-g",
 		"--js-runtimes", "node",
 		"--no-playlist",
-		videoURL,
 	}
+	if u.cookiesPath != "" {
+		args = append(args, "--cookies", u.cookiesPath)
+	}
+	args = append(args, videoURL)
+
 	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
 	var out, stderr bytes.Buffer
 	cmd.Stdout = &out
