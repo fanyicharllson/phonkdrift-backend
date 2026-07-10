@@ -6,8 +6,9 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o discovery-service ./cmd/discovery-service/main.go
 
-# Stage 2: Runtime with yt-dlp
-FROM alpine:3.19
+# Stage 2: Runtime with yt-dlp (node:22-alpine ships a musl-compatible Node 22 build,
+# which is yt-dlp's minimum supported version for JS challenge solving)
+FROM node:22-alpine
 WORKDIR /app
 
 # Install yt-dlp + ffmpeg (needed for audio extraction/conversion)
@@ -16,14 +17,14 @@ RUN apk add --no-cache \
     py3-pip \
     ffmpeg \
     curl \
-    ca-certificates \
-    nodejs \          
-    npm  
+    ca-certificates
 
-RUN pip3 install --break-system-packages yt-dlp
+# yt-dlp[default] pulls in yt-dlp-ejs, the JS challenge-solver scripts required
+# for YouTube signature/n-parameter deciphering
+RUN pip3 install --break-system-packages "yt-dlp[default]"
 
-# Tell yt-dlp to use nodejs as JS runtime
-ENV YT_DLP_JS_RUNTIME=nodejs
+# Only Deno is enabled by default for JS challenge solving; Node must be enabled explicitly
+RUN echo '--js-runtimes node' > /etc/yt-dlp.conf
 
 COPY --from=builder /app/discovery-service .
 
