@@ -3,6 +3,7 @@ package usecase
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -87,8 +88,13 @@ func getFCMAccessToken() (string, string, error) {
 		return "", "", fmt.Errorf("FCM_SERVICE_ACCOUNT_JSON not set")
 	}
 
-	// Decode base64 if needed
-	jsonBytes := []byte(serviceAccountJSON)
+	// The secret is stored base64-encoded (both in docker-compose and the k3s
+	// secret); decode it. Fall back to treating it as raw JSON if it's ever
+	// set unencoded, so this doesn't break either way.
+	jsonBytes, err := base64.StdEncoding.DecodeString(serviceAccountJSON)
+	if err != nil {
+		jsonBytes = []byte(serviceAccountJSON)
+	}
 
 	conf, err := google.CredentialsFromJSON(
 		context.Background(),
