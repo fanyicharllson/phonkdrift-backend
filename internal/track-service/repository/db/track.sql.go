@@ -700,6 +700,20 @@ func (q *Queries) RejectTrack(ctx context.Context, id string) error {
 	return err
 }
 
+const removeTrackFromPlaylist = `-- name: RemoveTrackFromPlaylist :exec
+DELETE FROM playlist_tracks WHERE playlist_id = $1 AND track_id = $2
+`
+
+type RemoveTrackFromPlaylistParams struct {
+	PlaylistID uuid.UUID `json:"playlist_id"`
+	TrackID    string    `json:"track_id"`
+}
+
+func (q *Queries) RemoveTrackFromPlaylist(ctx context.Context, arg RemoveTrackFromPlaylistParams) error {
+	_, err := q.db.ExecContext(ctx, removeTrackFromPlaylist, arg.PlaylistID, arg.TrackID)
+	return err
+}
+
 const searchTracks = `-- name: SearchTracks :many
 SELECT id, title, artist_id, artist_name, duration, thumbnail_url, youtube_id, play_count, likes_count, created_at, storage_url, genre, is_featured, is_approved, is_rejected, source, yt_view_count, fcm_notified FROM tracks
 WHERE is_approved = true 

@@ -2220,7 +2220,7 @@ const file_track_track_proto_rawDesc = "" +
 	"\x04page\x18\x03 \x01(\x05R\x04page\"\\\n" +
 	"\x16GetLikedTracksResponse\x12,\n" +
 	"\x06tracks\x18\x01 \x03(\v2\x14.track.TrackMetadataR\x06tracks\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total2\xb9\v\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total2\x90\f\n" +
 	"\fTrackService\x12:\n" +
 	"\vSearchTrack\x12\x14.track.SearchRequest\x1a\x15.track.SearchResponse\x12;\n" +
 	"\fGetStreamURL\x12\x14.track.StreamRequest\x1a\x15.track.StreamResponse\x12D\n" +
@@ -2230,7 +2230,8 @@ const file_track_track_proto_rawDesc = "" +
 	"\x11GetRecentlyPlayed\x12\x1c.track.RecentlyPlayedRequest\x1a\x1d.track.RecentlyPlayedResponse\x12L\n" +
 	"\x13SetTrackInteraction\x12\x19.track.InteractionRequest\x1a\x1a.track.InteractionResponse\x12G\n" +
 	"\x0eCreatePlaylist\x12\x1c.track.CreatePlaylistRequest\x1a\x17.track.PlaylistResponse\x12K\n" +
-	"\rAddToPlaylist\x12\x1b.track.PlaylistTrackRequest\x1a\x1d.track.PlaylistActionResponse\x12D\n" +
+	"\rAddToPlaylist\x12\x1b.track.PlaylistTrackRequest\x1a\x1d.track.PlaylistActionResponse\x12U\n" +
+	"\x17RemoveTrackFromPlaylist\x12\x1b.track.PlaylistTrackRequest\x1a\x1d.track.PlaylistActionResponse\x12D\n" +
 	"\vGetPlaylist\x12\x19.track.GetPlaylistRequest\x1a\x1a.track.GetPlaylistResponse\x12S\n" +
 	"\x10GetUserPlaylists\x12\x1e.track.GetUserPlaylistsRequest\x1a\x1f.track.GetUserPlaylistsResponse\x12M\n" +
 	"\x0eDeletePlaylist\x12\x1c.track.DeletePlaylistRequest\x1a\x1d.track.PlaylistActionResponse\x12>\n" +
@@ -2312,39 +2313,41 @@ var file_track_track_proto_depIdxs = []int32{
 	12, // 14: track.TrackService.SetTrackInteraction:input_type -> track.InteractionRequest
 	14, // 15: track.TrackService.CreatePlaylist:input_type -> track.CreatePlaylistRequest
 	16, // 16: track.TrackService.AddToPlaylist:input_type -> track.PlaylistTrackRequest
-	19, // 17: track.TrackService.GetPlaylist:input_type -> track.GetPlaylistRequest
-	21, // 18: track.TrackService.GetUserPlaylists:input_type -> track.GetUserPlaylistsRequest
-	18, // 19: track.TrackService.DeletePlaylist:input_type -> track.DeletePlaylistRequest
-	26, // 20: track.TrackService.SeedTrack:input_type -> track.SeedTrackRequest
-	28, // 21: track.TrackService.ListTracksAdmin:input_type -> track.ListTracksAdminRequest
-	30, // 22: track.TrackService.ApproveTrack:input_type -> track.TrackActionRequest
-	30, // 23: track.TrackService.RejectTrack:input_type -> track.TrackActionRequest
-	32, // 24: track.TrackService.FeatureTrack:input_type -> track.FeatureTrackRequest
-	30, // 25: track.TrackService.DeleteTrack:input_type -> track.TrackActionRequest
-	0,  // 26: track.TrackService.GetAdminStats:input_type -> track.Empty
-	34, // 27: track.TrackService.GetLikedTracks:input_type -> track.GetLikedTracksRequest
-	3,  // 28: track.TrackService.SearchTrack:output_type -> track.SearchResponse
-	5,  // 29: track.TrackService.GetStreamURL:output_type -> track.StreamResponse
-	7,  // 30: track.TrackService.GetTrendingTracks:output_type -> track.TrendingResponse
-	25, // 31: track.TrackService.GetForYou:output_type -> track.ForYouResponse
-	9,  // 32: track.TrackService.SyncPlaybackTelemetry:output_type -> track.PlaybackTelemetryResponse
-	11, // 33: track.TrackService.GetRecentlyPlayed:output_type -> track.RecentlyPlayedResponse
-	13, // 34: track.TrackService.SetTrackInteraction:output_type -> track.InteractionResponse
-	15, // 35: track.TrackService.CreatePlaylist:output_type -> track.PlaylistResponse
-	17, // 36: track.TrackService.AddToPlaylist:output_type -> track.PlaylistActionResponse
-	20, // 37: track.TrackService.GetPlaylist:output_type -> track.GetPlaylistResponse
-	23, // 38: track.TrackService.GetUserPlaylists:output_type -> track.GetUserPlaylistsResponse
-	17, // 39: track.TrackService.DeletePlaylist:output_type -> track.PlaylistActionResponse
-	27, // 40: track.TrackService.SeedTrack:output_type -> track.SeedTrackResponse
-	29, // 41: track.TrackService.ListTracksAdmin:output_type -> track.ListTracksAdminResponse
-	31, // 42: track.TrackService.ApproveTrack:output_type -> track.TrackActionResponse
-	31, // 43: track.TrackService.RejectTrack:output_type -> track.TrackActionResponse
-	31, // 44: track.TrackService.FeatureTrack:output_type -> track.TrackActionResponse
-	31, // 45: track.TrackService.DeleteTrack:output_type -> track.TrackActionResponse
-	33, // 46: track.TrackService.GetAdminStats:output_type -> track.AdminStatsResponse
-	35, // 47: track.TrackService.GetLikedTracks:output_type -> track.GetLikedTracksResponse
-	28, // [28:48] is the sub-list for method output_type
-	8,  // [8:28] is the sub-list for method input_type
+	16, // 17: track.TrackService.RemoveTrackFromPlaylist:input_type -> track.PlaylistTrackRequest
+	19, // 18: track.TrackService.GetPlaylist:input_type -> track.GetPlaylistRequest
+	21, // 19: track.TrackService.GetUserPlaylists:input_type -> track.GetUserPlaylistsRequest
+	18, // 20: track.TrackService.DeletePlaylist:input_type -> track.DeletePlaylistRequest
+	26, // 21: track.TrackService.SeedTrack:input_type -> track.SeedTrackRequest
+	28, // 22: track.TrackService.ListTracksAdmin:input_type -> track.ListTracksAdminRequest
+	30, // 23: track.TrackService.ApproveTrack:input_type -> track.TrackActionRequest
+	30, // 24: track.TrackService.RejectTrack:input_type -> track.TrackActionRequest
+	32, // 25: track.TrackService.FeatureTrack:input_type -> track.FeatureTrackRequest
+	30, // 26: track.TrackService.DeleteTrack:input_type -> track.TrackActionRequest
+	0,  // 27: track.TrackService.GetAdminStats:input_type -> track.Empty
+	34, // 28: track.TrackService.GetLikedTracks:input_type -> track.GetLikedTracksRequest
+	3,  // 29: track.TrackService.SearchTrack:output_type -> track.SearchResponse
+	5,  // 30: track.TrackService.GetStreamURL:output_type -> track.StreamResponse
+	7,  // 31: track.TrackService.GetTrendingTracks:output_type -> track.TrendingResponse
+	25, // 32: track.TrackService.GetForYou:output_type -> track.ForYouResponse
+	9,  // 33: track.TrackService.SyncPlaybackTelemetry:output_type -> track.PlaybackTelemetryResponse
+	11, // 34: track.TrackService.GetRecentlyPlayed:output_type -> track.RecentlyPlayedResponse
+	13, // 35: track.TrackService.SetTrackInteraction:output_type -> track.InteractionResponse
+	15, // 36: track.TrackService.CreatePlaylist:output_type -> track.PlaylistResponse
+	17, // 37: track.TrackService.AddToPlaylist:output_type -> track.PlaylistActionResponse
+	17, // 38: track.TrackService.RemoveTrackFromPlaylist:output_type -> track.PlaylistActionResponse
+	20, // 39: track.TrackService.GetPlaylist:output_type -> track.GetPlaylistResponse
+	23, // 40: track.TrackService.GetUserPlaylists:output_type -> track.GetUserPlaylistsResponse
+	17, // 41: track.TrackService.DeletePlaylist:output_type -> track.PlaylistActionResponse
+	27, // 42: track.TrackService.SeedTrack:output_type -> track.SeedTrackResponse
+	29, // 43: track.TrackService.ListTracksAdmin:output_type -> track.ListTracksAdminResponse
+	31, // 44: track.TrackService.ApproveTrack:output_type -> track.TrackActionResponse
+	31, // 45: track.TrackService.RejectTrack:output_type -> track.TrackActionResponse
+	31, // 46: track.TrackService.FeatureTrack:output_type -> track.TrackActionResponse
+	31, // 47: track.TrackService.DeleteTrack:output_type -> track.TrackActionResponse
+	33, // 48: track.TrackService.GetAdminStats:output_type -> track.AdminStatsResponse
+	35, // 49: track.TrackService.GetLikedTracks:output_type -> track.GetLikedTracksResponse
+	29, // [29:50] is the sub-list for method output_type
+	8,  // [8:29] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
 	8,  // [8:8] is the sub-list for extension extendee
 	0,  // [0:8] is the sub-list for field type_name

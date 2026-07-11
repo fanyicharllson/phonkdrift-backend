@@ -19,26 +19,27 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TrackService_SearchTrack_FullMethodName           = "/track.TrackService/SearchTrack"
-	TrackService_GetStreamURL_FullMethodName          = "/track.TrackService/GetStreamURL"
-	TrackService_GetTrendingTracks_FullMethodName     = "/track.TrackService/GetTrendingTracks"
-	TrackService_GetForYou_FullMethodName             = "/track.TrackService/GetForYou"
-	TrackService_SyncPlaybackTelemetry_FullMethodName = "/track.TrackService/SyncPlaybackTelemetry"
-	TrackService_GetRecentlyPlayed_FullMethodName     = "/track.TrackService/GetRecentlyPlayed"
-	TrackService_SetTrackInteraction_FullMethodName   = "/track.TrackService/SetTrackInteraction"
-	TrackService_CreatePlaylist_FullMethodName        = "/track.TrackService/CreatePlaylist"
-	TrackService_AddToPlaylist_FullMethodName         = "/track.TrackService/AddToPlaylist"
-	TrackService_GetPlaylist_FullMethodName           = "/track.TrackService/GetPlaylist"
-	TrackService_GetUserPlaylists_FullMethodName      = "/track.TrackService/GetUserPlaylists"
-	TrackService_DeletePlaylist_FullMethodName        = "/track.TrackService/DeletePlaylist"
-	TrackService_SeedTrack_FullMethodName             = "/track.TrackService/SeedTrack"
-	TrackService_ListTracksAdmin_FullMethodName       = "/track.TrackService/ListTracksAdmin"
-	TrackService_ApproveTrack_FullMethodName          = "/track.TrackService/ApproveTrack"
-	TrackService_RejectTrack_FullMethodName           = "/track.TrackService/RejectTrack"
-	TrackService_FeatureTrack_FullMethodName          = "/track.TrackService/FeatureTrack"
-	TrackService_DeleteTrack_FullMethodName           = "/track.TrackService/DeleteTrack"
-	TrackService_GetAdminStats_FullMethodName         = "/track.TrackService/GetAdminStats"
-	TrackService_GetLikedTracks_FullMethodName        = "/track.TrackService/GetLikedTracks"
+	TrackService_SearchTrack_FullMethodName             = "/track.TrackService/SearchTrack"
+	TrackService_GetStreamURL_FullMethodName            = "/track.TrackService/GetStreamURL"
+	TrackService_GetTrendingTracks_FullMethodName       = "/track.TrackService/GetTrendingTracks"
+	TrackService_GetForYou_FullMethodName               = "/track.TrackService/GetForYou"
+	TrackService_SyncPlaybackTelemetry_FullMethodName   = "/track.TrackService/SyncPlaybackTelemetry"
+	TrackService_GetRecentlyPlayed_FullMethodName       = "/track.TrackService/GetRecentlyPlayed"
+	TrackService_SetTrackInteraction_FullMethodName     = "/track.TrackService/SetTrackInteraction"
+	TrackService_CreatePlaylist_FullMethodName          = "/track.TrackService/CreatePlaylist"
+	TrackService_AddToPlaylist_FullMethodName           = "/track.TrackService/AddToPlaylist"
+	TrackService_RemoveTrackFromPlaylist_FullMethodName = "/track.TrackService/RemoveTrackFromPlaylist"
+	TrackService_GetPlaylist_FullMethodName             = "/track.TrackService/GetPlaylist"
+	TrackService_GetUserPlaylists_FullMethodName        = "/track.TrackService/GetUserPlaylists"
+	TrackService_DeletePlaylist_FullMethodName          = "/track.TrackService/DeletePlaylist"
+	TrackService_SeedTrack_FullMethodName               = "/track.TrackService/SeedTrack"
+	TrackService_ListTracksAdmin_FullMethodName         = "/track.TrackService/ListTracksAdmin"
+	TrackService_ApproveTrack_FullMethodName            = "/track.TrackService/ApproveTrack"
+	TrackService_RejectTrack_FullMethodName             = "/track.TrackService/RejectTrack"
+	TrackService_FeatureTrack_FullMethodName            = "/track.TrackService/FeatureTrack"
+	TrackService_DeleteTrack_FullMethodName             = "/track.TrackService/DeleteTrack"
+	TrackService_GetAdminStats_FullMethodName           = "/track.TrackService/GetAdminStats"
+	TrackService_GetLikedTracks_FullMethodName          = "/track.TrackService/GetLikedTracks"
 )
 
 // TrackServiceClient is the client API for TrackService service.
@@ -57,6 +58,7 @@ type TrackServiceClient interface {
 	SetTrackInteraction(ctx context.Context, in *InteractionRequest, opts ...grpc.CallOption) (*InteractionResponse, error)
 	CreatePlaylist(ctx context.Context, in *CreatePlaylistRequest, opts ...grpc.CallOption) (*PlaylistResponse, error)
 	AddToPlaylist(ctx context.Context, in *PlaylistTrackRequest, opts ...grpc.CallOption) (*PlaylistActionResponse, error)
+	RemoveTrackFromPlaylist(ctx context.Context, in *PlaylistTrackRequest, opts ...grpc.CallOption) (*PlaylistActionResponse, error)
 	GetPlaylist(ctx context.Context, in *GetPlaylistRequest, opts ...grpc.CallOption) (*GetPlaylistResponse, error)
 	GetUserPlaylists(ctx context.Context, in *GetUserPlaylistsRequest, opts ...grpc.CallOption) (*GetUserPlaylistsResponse, error)
 	DeletePlaylist(ctx context.Context, in *DeletePlaylistRequest, opts ...grpc.CallOption) (*PlaylistActionResponse, error)
@@ -164,6 +166,16 @@ func (c *trackServiceClient) AddToPlaylist(ctx context.Context, in *PlaylistTrac
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PlaylistActionResponse)
 	err := c.cc.Invoke(ctx, TrackService_AddToPlaylist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *trackServiceClient) RemoveTrackFromPlaylist(ctx context.Context, in *PlaylistTrackRequest, opts ...grpc.CallOption) (*PlaylistActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PlaylistActionResponse)
+	err := c.cc.Invoke(ctx, TrackService_RemoveTrackFromPlaylist_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -296,6 +308,7 @@ type TrackServiceServer interface {
 	SetTrackInteraction(context.Context, *InteractionRequest) (*InteractionResponse, error)
 	CreatePlaylist(context.Context, *CreatePlaylistRequest) (*PlaylistResponse, error)
 	AddToPlaylist(context.Context, *PlaylistTrackRequest) (*PlaylistActionResponse, error)
+	RemoveTrackFromPlaylist(context.Context, *PlaylistTrackRequest) (*PlaylistActionResponse, error)
 	GetPlaylist(context.Context, *GetPlaylistRequest) (*GetPlaylistResponse, error)
 	GetUserPlaylists(context.Context, *GetUserPlaylistsRequest) (*GetUserPlaylistsResponse, error)
 	DeletePlaylist(context.Context, *DeletePlaylistRequest) (*PlaylistActionResponse, error)
@@ -345,6 +358,9 @@ func (UnimplementedTrackServiceServer) CreatePlaylist(context.Context, *CreatePl
 }
 func (UnimplementedTrackServiceServer) AddToPlaylist(context.Context, *PlaylistTrackRequest) (*PlaylistActionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddToPlaylist not implemented")
+}
+func (UnimplementedTrackServiceServer) RemoveTrackFromPlaylist(context.Context, *PlaylistTrackRequest) (*PlaylistActionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveTrackFromPlaylist not implemented")
 }
 func (UnimplementedTrackServiceServer) GetPlaylist(context.Context, *GetPlaylistRequest) (*GetPlaylistResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPlaylist not implemented")
@@ -558,6 +574,24 @@ func _TrackService_AddToPlaylist_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TrackServiceServer).AddToPlaylist(ctx, req.(*PlaylistTrackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TrackService_RemoveTrackFromPlaylist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PlaylistTrackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TrackServiceServer).RemoveTrackFromPlaylist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TrackService_RemoveTrackFromPlaylist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TrackServiceServer).RemoveTrackFromPlaylist(ctx, req.(*PlaylistTrackRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -802,6 +836,10 @@ var TrackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddToPlaylist",
 			Handler:    _TrackService_AddToPlaylist_Handler,
+		},
+		{
+			MethodName: "RemoveTrackFromPlaylist",
+			Handler:    _TrackService_RemoveTrackFromPlaylist_Handler,
 		},
 		{
 			MethodName: "GetPlaylist",

@@ -32,6 +32,7 @@ type Querier interface {
 	MarkTrackFCMNotified(ctx context.Context, id string) error
 	MarkTracksFCMNotified(ctx context.Context, ids []string) error
 	RejectTrack(ctx context.Context, id string) error
+	RemoveTrackFromPlaylist(ctx context.Context, arg RemoveTrackFromPlaylistParams) error
 	SearchTracks(ctx context.Context, arg SearchTracksParams) ([]Track, error)
 	SetTrackInteraction(ctx context.Context, arg SetTrackInteractionParams) error
 	SyncPlaybackTelemetry(ctx context.Context, arg SyncPlaybackTelemetryParams) error

@@ -19,6 +19,7 @@ service TrackService {
   rpc SetTrackInteraction (InteractionRequest) returns (InteractionResponse);
   rpc CreatePlaylist (CreatePlaylistRequest) returns (PlaylistResponse);
   rpc AddToPlaylist (PlaylistTrackRequest) returns (PlaylistActionResponse);
+  rpc RemoveTrackFromPlaylist (PlaylistTrackRequest) returns (PlaylistActionResponse);
   rpc GetPlaylist (GetPlaylistRequest) returns (GetPlaylistResponse);
   rpc GetUserPlaylists (GetUserPlaylistsRequest) returns (GetUserPlaylistsResponse);
   rpc DeletePlaylist (DeletePlaylistRequest) returns (PlaylistActionResponse);

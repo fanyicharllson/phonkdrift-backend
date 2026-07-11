@@ -33,6 +33,7 @@ type TrackUsecase interface {
 	SetInteraction(ctx context.Context, userID string, trackID string, isLiked bool) error
 	NewPlaylist(ctx context.Context, userID string, name string, coverURL string) (*trackpb.PlaylistResponse, error)
 	AddTrackToPlaylist(ctx context.Context, playlistID string, trackID string, requesterID string) error
+	RemoveTrackFromPlaylist(ctx context.Context, playlistID string, trackID string, requesterID string) error
 	GetPlaylist(ctx context.Context, playlistID string, requesterID string) (*trackpb.GetPlaylistResponse, error)
 	DeletePlaylist(ctx context.Context, playlistID string, requesterID string) error
 	GetUserPlaylists(ctx context.Context, userID string) ([]*trackpb.PlaylistSummary, error)
@@ -558,6 +559,26 @@ func (u *trackUsecase) AddTrackToPlaylist(ctx context.Context, playlistID string
 	}
 
 	return u.repo.AddTrackToPlaylist(ctx, db.AddTrackToPlaylistParams{
+		PlaylistID: playlistUUID,
+		TrackID:    trackID,
+	})
+}
+
+func (u *trackUsecase) RemoveTrackFromPlaylist(ctx context.Context, playlistID string, trackID string, requesterID string) error {
+	playlistUUID, err := uuid.Parse(playlistID)
+	if err != nil {
+		return fmt.Errorf("invalid playlist uuid: %w", err)
+	}
+
+	playlist, err := u.repo.GetPlaylistByID(ctx, playlistUUID)
+	if err != nil {
+		return fmt.Errorf("playlist not found: %w", err)
+	}
+	if playlist.UserID.String() != requesterID {
+		return ErrPlaylistAccessDenied
+	}
+
+	return u.repo.RemoveTrackFromPlaylist(ctx, db.RemoveTrackFromPlaylistParams{
 		PlaylistID: playlistUUID,
 		TrackID:    trackID,
 	})

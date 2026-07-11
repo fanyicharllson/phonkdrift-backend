@@ -61,8 +61,8 @@ func NewWorker(apiKey string) *Worker {
 		apiKey:     apiKey,
 		httpClient: &http.Client{Timeout: 15 * time.Second},
 		queries: []string{
-			"Montagem funks slowed 2026",
 			"Trending Phonk 2026",
+			"Dale Otra Vez (Slowed)",
 		},
 	}
 }

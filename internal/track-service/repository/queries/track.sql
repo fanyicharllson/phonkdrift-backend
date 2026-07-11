@@ -107,6 +107,9 @@ INSERT INTO playlist_tracks (playlist_id, track_id)
 VALUES ($1, $2)
 ON CONFLICT (playlist_id, track_id) DO NOTHING;
 
+-- name: RemoveTrackFromPlaylist :exec
+DELETE FROM playlist_tracks WHERE playlist_id = $1 AND track_id = $2;
+
 -- name: GetPlaylistByID :one
 SELECT * FROM playlists WHERE id = $1 LIMIT 1;
 

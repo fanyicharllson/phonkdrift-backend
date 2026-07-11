@@ -143,7 +143,9 @@ func main() {
 			log.Printf("Warning: Failed to connect to Auth Service for trending notifier: %v", err)
 		} else {
 			authClient := authpb.NewAuthServiceClient(authConn)
-			notifier := discovery.NewTrendingNotifier(repo, authClient, 15*time.Minute)
+			// Once a day: still gated by fcm_notified, so this only ever
+			// sends when something genuinely new is waiting to be announced.
+			notifier := discovery.NewTrendingNotifier(repo, authClient, 24*time.Hour)
 			go notifier.Start(ctx)
 		}
 	} else {

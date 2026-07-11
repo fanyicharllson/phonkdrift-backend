@@ -74,6 +74,11 @@ func (s *GatewayServer) AddToPlaylist(ctx context.Context, req *trackpb.Playlist
 	return s.trackProxy.client.AddToPlaylist(ctx, req)
 }
 
+func (s *GatewayServer) RemoveTrackFromPlaylist(ctx context.Context, req *trackpb.PlaylistTrackRequest) (*trackpb.PlaylistActionResponse, error) {
+	req.UserId = verifiedUserID(ctx)
+	return s.trackProxy.client.RemoveTrackFromPlaylist(ctx, req)
+}
+
 func (s *GatewayServer) GetPlaylist(ctx context.Context, req *trackpb.GetPlaylistRequest) (*trackpb.GetPlaylistResponse, error) {
 	req.UserId = verifiedUserID(ctx)
 	return s.trackProxy.client.GetPlaylist(ctx, req)
