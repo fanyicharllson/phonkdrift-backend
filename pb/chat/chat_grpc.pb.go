@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	ChatService_JoinCommunity_FullMethodName       = "/chat.ChatService/JoinCommunity"
+	ChatService_LeaveCommunity_FullMethodName      = "/chat.ChatService/LeaveCommunity"
 	ChatService_IsCommunityMember_FullMethodName   = "/chat.ChatService/IsCommunityMember"
 	ChatService_SendMessage_FullMethodName         = "/chat.ChatService/SendMessage"
 	ChatService_GetMessages_FullMethodName         = "/chat.ChatService/GetMessages"
@@ -36,6 +37,7 @@ const (
 // community membership, with realtime delivery via server-streaming.
 type ChatServiceClient interface {
 	JoinCommunity(ctx context.Context, in *JoinCommunityRequest, opts ...grpc.CallOption) (*JoinCommunityResponse, error)
+	LeaveCommunity(ctx context.Context, in *LeaveCommunityRequest, opts ...grpc.CallOption) (*LeaveCommunityResponse, error)
 	IsCommunityMember(ctx context.Context, in *IsCommunityMemberRequest, opts ...grpc.CallOption) (*IsCommunityMemberResponse, error)
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageResponse, error)
 	GetMessages(ctx context.Context, in *GetMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error)
@@ -56,6 +58,16 @@ func (c *chatServiceClient) JoinCommunity(ctx context.Context, in *JoinCommunity
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(JoinCommunityResponse)
 	err := c.cc.Invoke(ctx, ChatService_JoinCommunity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) LeaveCommunity(ctx context.Context, in *LeaveCommunityRequest, opts ...grpc.CallOption) (*LeaveCommunityResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LeaveCommunityResponse)
+	err := c.cc.Invoke(ctx, ChatService_LeaveCommunity_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +151,7 @@ func (c *chatServiceClient) GetCommunityMembers(ctx context.Context, in *GetComm
 // community membership, with realtime delivery via server-streaming.
 type ChatServiceServer interface {
 	JoinCommunity(context.Context, *JoinCommunityRequest) (*JoinCommunityResponse, error)
+	LeaveCommunity(context.Context, *LeaveCommunityRequest) (*LeaveCommunityResponse, error)
 	IsCommunityMember(context.Context, *IsCommunityMemberRequest) (*IsCommunityMemberResponse, error)
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error)
 	GetMessages(context.Context, *GetMessagesRequest) (*GetMessagesResponse, error)
@@ -157,6 +170,9 @@ type UnimplementedChatServiceServer struct{}
 
 func (UnimplementedChatServiceServer) JoinCommunity(context.Context, *JoinCommunityRequest) (*JoinCommunityResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method JoinCommunity not implemented")
+}
+func (UnimplementedChatServiceServer) LeaveCommunity(context.Context, *LeaveCommunityRequest) (*LeaveCommunityResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LeaveCommunity not implemented")
 }
 func (UnimplementedChatServiceServer) IsCommunityMember(context.Context, *IsCommunityMemberRequest) (*IsCommunityMemberResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method IsCommunityMember not implemented")
@@ -211,6 +227,24 @@ func _ChatService_JoinCommunity_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ChatServiceServer).JoinCommunity(ctx, req.(*JoinCommunityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_LeaveCommunity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaveCommunityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).LeaveCommunity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_LeaveCommunity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).LeaveCommunity(ctx, req.(*LeaveCommunityRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -326,6 +360,10 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "JoinCommunity",
 			Handler:    _ChatService_JoinCommunity_Handler,
+		},
+		{
+			MethodName: "LeaveCommunity",
+			Handler:    _ChatService_LeaveCommunity_Handler,
 		},
 		{
 			MethodName: "IsCommunityMember",

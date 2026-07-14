@@ -8,6 +8,7 @@ option go_package = "github.com/fanyicharllson/phonkdrift-backend/pb/chat;chatpb
 // community membership, with realtime delivery via server-streaming.
 service ChatService {
   rpc JoinCommunity (JoinCommunityRequest) returns (JoinCommunityResponse);
+  rpc LeaveCommunity (LeaveCommunityRequest) returns (LeaveCommunityResponse);
   rpc IsCommunityMember (IsCommunityMemberRequest) returns (IsCommunityMemberResponse);
 
   rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
@@ -23,6 +24,14 @@ message JoinCommunityRequest {
 }
 
 message JoinCommunityResponse {
+  bool success = 1;
+}
+
+message LeaveCommunityRequest {
+  string user_id = 1;
+}
+
+message LeaveCommunityResponse {
   bool success = 1;
 }
 

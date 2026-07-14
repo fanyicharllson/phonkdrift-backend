@@ -59,6 +59,13 @@ func (u *chatUsecase) notifyNewMember(username, userID string) {
 	})
 }
 
+func (u *chatUsecase) LeaveCommunity(ctx context.Context, userID string) error {
+	if userID == "" {
+		return errors.New("user_id is required")
+	}
+	return u.repo.LeaveCommunity(ctx, userID)
+}
+
 func (u *chatUsecase) IsCommunityMember(ctx context.Context, userID string) (bool, error) {
 	if userID == "" {
 		return false, errors.New("user_id is required")

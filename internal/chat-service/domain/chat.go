@@ -42,6 +42,7 @@ type ChatRepository interface {
 	// JoinCommunity returns true if this call actually inserted a new
 	// membership row (false if the user was already a member).
 	JoinCommunity(ctx context.Context, userID, username, avatarURL string) (bool, error)
+	LeaveCommunity(ctx context.Context, userID string) error
 	IsCommunityMember(ctx context.Context, userID string) (bool, error)
 	CountCommunityMembers(ctx context.Context) (int64, error)
 	ListCommunityMembers(ctx context.Context, page, limit int32) ([]*CommunityMember, error)
@@ -53,6 +54,7 @@ type ChatRepository interface {
 // ChatUsecase defines the core business orchestration entry point (Hexagonal Input Port)
 type ChatUsecase interface {
 	JoinCommunity(ctx context.Context, userID string) error
+	LeaveCommunity(ctx context.Context, userID string) error
 	IsCommunityMember(ctx context.Context, userID string) (bool, error)
 	SendMessage(ctx context.Context, userID, content, mediaURL, messageType, replyToID string) (*ChatMessage, error)
 	GetMessages(ctx context.Context, userID string, beforeTimestamp int64, limit int32) ([]*ChatMessage, error)

@@ -3,6 +3,9 @@ INSERT INTO community_members (user_id, username, avatar_url) VALUES ($1, $2, $3
 ON CONFLICT (user_id) DO NOTHING
 RETURNING user_id;
 
+-- name: LeaveCommunity :exec
+DELETE FROM community_members WHERE user_id = $1;
+
 -- name: IsCommunityMember :one
 SELECT EXISTS(SELECT 1 FROM community_members WHERE user_id = $1) AS is_member;
 

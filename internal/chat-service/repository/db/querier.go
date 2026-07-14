@@ -17,6 +17,7 @@ type Querier interface {
 	GetMessagesBefore(ctx context.Context, arg GetMessagesBeforeParams) ([]ChatMessage, error)
 	IsCommunityMember(ctx context.Context, userID uuid.UUID) (bool, error)
 	JoinCommunity(ctx context.Context, arg JoinCommunityParams) (uuid.UUID, error)
+	LeaveCommunity(ctx context.Context, userID uuid.UUID) error
 	ListCommunityMembers(ctx context.Context, arg ListCommunityMembersParams) ([]ListCommunityMembersRow, error)
 }
 

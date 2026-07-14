@@ -31,6 +31,16 @@ func (h *ChatGRPCHandler) JoinCommunity(ctx context.Context, req *chatpb.JoinCom
 	return &chatpb.JoinCommunityResponse{Success: true}, nil
 }
 
+func (h *ChatGRPCHandler) LeaveCommunity(ctx context.Context, req *chatpb.LeaveCommunityRequest) (*chatpb.LeaveCommunityResponse, error) {
+	if req.GetUserId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+	if err := h.usecase.LeaveCommunity(ctx, req.GetUserId()); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to leave community: %v", err)
+	}
+	return &chatpb.LeaveCommunityResponse{Success: true}, nil
+}
+
 func (h *ChatGRPCHandler) IsCommunityMember(ctx context.Context, req *chatpb.IsCommunityMemberRequest) (*chatpb.IsCommunityMemberResponse, error) {
 	if req.GetUserId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")

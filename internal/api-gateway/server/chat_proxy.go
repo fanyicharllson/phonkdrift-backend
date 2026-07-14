@@ -29,6 +29,11 @@ func (s *GatewayServer) JoinCommunity(ctx context.Context, req *chatpb.JoinCommu
 	return s.chatProxy.client.JoinCommunity(ctx, req)
 }
 
+func (s *GatewayServer) LeaveCommunity(ctx context.Context, req *chatpb.LeaveCommunityRequest) (*chatpb.LeaveCommunityResponse, error) {
+	req.UserId = verifiedUserID(ctx)
+	return s.chatProxy.client.LeaveCommunity(ctx, req)
+}
+
 func (s *GatewayServer) IsCommunityMember(ctx context.Context, req *chatpb.IsCommunityMemberRequest) (*chatpb.IsCommunityMemberResponse, error) {
 	req.UserId = verifiedUserID(ctx)
 	return s.chatProxy.client.IsCommunityMember(ctx, req)

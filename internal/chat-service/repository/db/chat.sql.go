@@ -160,6 +160,15 @@ func (q *Queries) JoinCommunity(ctx context.Context, arg JoinCommunityParams) (u
 	return user_id, err
 }
 
+const leaveCommunity = `-- name: LeaveCommunity :exec
+DELETE FROM community_members WHERE user_id = $1
+`
+
+func (q *Queries) LeaveCommunity(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, leaveCommunity, userID)
+	return err
+}
+
 const listCommunityMembers = `-- name: ListCommunityMembers :many
 SELECT user_id, username, avatar_url, joined_at,
        ROW_NUMBER() OVER (ORDER BY joined_at ASC) AS join_rank

@@ -41,6 +41,14 @@ func (r *chatRepository) JoinCommunity(ctx context.Context, userID, username, av
 	return true, nil
 }
 
+func (r *chatRepository) LeaveCommunity(ctx context.Context, userID string) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return err
+	}
+	return r.queries.LeaveCommunity(ctx, uid)
+}
+
 func (r *chatRepository) IsCommunityMember(ctx context.Context, userID string) (bool, error) {
 	uid, err := uuid.Parse(userID)
 	if err != nil {
