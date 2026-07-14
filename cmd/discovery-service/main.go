@@ -147,9 +147,16 @@ func main() {
 			// sends when something genuinely new is waiting to be announced.
 			notifier := discovery.NewTrendingNotifier(repo, authClient, 24*time.Hour)
 			go notifier.Start(ctx)
+
+			// Engagement notifier: recommends a random catalog track every 12h,
+			// independent of whether anything new was discovered recently —
+			// keeps users coming back even when the trending notifier has
+			// nothing new to announce.
+			engagementNotifier := discovery.NewEngagementNotifier(repo, authClient, 12*time.Hour)
+			go engagementNotifier.Start(ctx)
 		}
 	} else {
-		log.Println("Warning: AUTH_SERVICE_ADDR not set — automatic trending notifications disabled")
+		log.Println("Warning: AUTH_SERVICE_ADDR not set — automatic trending/engagement notifications disabled")
 	}
 
 	// Start Scheduler (blocking)
