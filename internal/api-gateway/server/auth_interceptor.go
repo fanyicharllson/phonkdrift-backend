@@ -16,8 +16,8 @@ type contextKey string
 const userIDContextKey contextKey = "user_id"
 
 var publicMethods = map[string]struct{}{
-	"/auth.AuthService/Login":          {},
-	"/auth.AuthService/Register":       {},
+	"/auth.AuthService/Login":    {},
+	"/auth.AuthService/Register": {},
 	// "/auth.AuthService/ForgotPassword": {},
 
 	// Current proto method names.
@@ -25,11 +25,11 @@ var publicMethods = map[string]struct{}{
 	authpb.AuthService_RegisterUser_FullMethodName: {},
 
 	authpb.AuthService_VerifyCode_FullMethodName:      {},
-    authpb.AuthService_ResendCode_FullMethodName:      {},
-    authpb.AuthService_ForgotPassword_FullMethodName:  {},
-    authpb.AuthService_VerifyResetCode_FullMethodName: {},
-    authpb.AuthService_ResetPassword_FullMethodName:   {},
-	authpb.AuthService_GetUserStatus_FullMethodName: {},
+	authpb.AuthService_ResendCode_FullMethodName:      {},
+	authpb.AuthService_ForgotPassword_FullMethodName:  {},
+	authpb.AuthService_VerifyResetCode_FullMethodName: {},
+	authpb.AuthService_ResetPassword_FullMethodName:   {},
+	authpb.AuthService_GetUserStatus_FullMethodName:   {},
 }
 
 func (s *GatewayServer) authUnaryInterceptor() grpc.UnaryServerInterceptor {
@@ -59,6 +59,47 @@ func (s *GatewayServer) authUnaryInterceptor() grpc.UnaryServerInterceptor {
 		ctx = metadata.AppendToOutgoingContext(ctx, "user_id", res.GetUserId())
 
 		return handler(ctx, req)
+	}
+}
+
+// wrappedServerStream lets us override Context() on an incoming stream so
+// downstream handlers (e.g. SubscribeToChat) see the JWT-verified user_id,
+// mirroring what authUnaryInterceptor does for unary calls.
+type wrappedServerStream struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (w *wrappedServerStream) Context() context.Context {
+	return w.ctx
+}
+
+func (s *GatewayServer) authStreamInterceptor() grpc.StreamServerInterceptor {
+	return func(
+		srv interface{},
+		stream grpc.ServerStream,
+		info *grpc.StreamServerInfo,
+		handler grpc.StreamHandler,
+	) error {
+		if _, ok := publicMethods[info.FullMethod]; ok {
+			return handler(srv, stream)
+		}
+
+		token, ok := bearerTokenFromContext(stream.Context())
+		if !ok {
+			return status.Error(codes.Unauthenticated, "authorization bearer token missing")
+		}
+
+		res, err := s.AuthClient.ValidateToken(stream.Context(), &authpb.ValidateTokenRequest{
+			Token: token,
+		})
+		if err != nil || !res.GetIsValid() || res.GetUserId() == "" {
+			return status.Error(codes.Unauthenticated, "invalid or expired authorization token")
+		}
+
+		ctx := context.WithValue(stream.Context(), userIDContextKey, res.GetUserId())
+
+		return handler(srv, &wrappedServerStream{ServerStream: stream, ctx: ctx})
 	}
 }
 

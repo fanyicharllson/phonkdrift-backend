@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package chat;
+
+option go_package = "github.com/fanyicharllson/phonkdrift-backend/pb/chat;chatpb";
+
+// The community chat service — a single global room, gated behind
+// community membership, with realtime delivery via server-streaming.
+service ChatService {
+  rpc JoinCommunity (JoinCommunityRequest) returns (JoinCommunityResponse);
+  rpc IsCommunityMember (IsCommunityMemberRequest) returns (IsCommunityMemberResponse);
+
+  rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
+  rpc GetMessages (GetMessagesRequest) returns (GetMessagesResponse);
+  rpc SubscribeToChat (SubscribeRequest) returns (stream ChatMessage);
+
+  rpc GetCommunityStats (GetCommunityStatsRequest) returns (GetCommunityStatsResponse);
+  rpc GetCommunityMembers (GetCommunityMembersRequest) returns (GetCommunityMembersResponse);
+}
+
+message JoinCommunityRequest {
+  string user_id = 1;
+}
+
+message JoinCommunityResponse {
+  bool success = 1;
+}
+
+message IsCommunityMemberRequest {
+  string user_id = 1;
+}
+
+message IsCommunityMemberResponse {
+  bool is_member = 1;
+}
+
+message ChatMessage {
+  string id                       = 1;
+  string user_id                  = 2;
+  string username                 = 3;
+  string avatar_url               = 4;
+  string content                  = 5;
+  string media_url                = 6;
+  string message_type             = 7; // "text" | "audio"
+  string reply_to_id              = 8;  // empty = not a reply
+  string reply_to_user_id         = 9;
+  string reply_to_username        = 10;
+  string reply_to_content_snippet = 11;
+  int64  created_at               = 12;
+}
+
+message SendMessageRequest {
+  string user_id      = 1; // set by the gateway from the verified session
+  string content      = 2;
+  string media_url    = 3; // set for message_type="audio" (already uploaded via REST)
+  string message_type = 4; // "text" | "audio"
+  string reply_to_id  = 5; // optional
+}
+
+message SendMessageResponse {
+  bool        success = 1;
+  ChatMessage message = 2;
+}
+
+message GetMessagesRequest {
+  string user_id          = 1; // set by the gateway; used for the membership check
+  int64  before_timestamp = 2; // 0 = start from most recent
+  int32  limit            = 3;
+}
+
+message GetMessagesResponse {
+  repeated ChatMessage messages = 1;
+}
+
+message SubscribeRequest {
+  string user_id = 1; // set by the gateway; used for the membership check
+}
+
+message GetCommunityStatsRequest {
+  string user_id = 1; // set by the gateway; used for the membership check
+}
+message GetCommunityStatsResponse {
+  int32 total_members = 1;
+}
+
+message CommunityMember {
+  string user_id    = 1;
+  string username   = 2;
+  string avatar_url = 3;
+  int64  joined_at  = 4;
+  string badge      = 5; // "first" | "new" | "" (empty = no badge)
+}
+
+message GetCommunityMembersRequest {
+  string user_id = 1; // set by the gateway; used for the membership check
+  int32  page    = 2;
+  int32  limit   = 3;
+}
+message GetCommunityMembersResponse {
+  repeated CommunityMember members = 1;
+  int32                    total   = 2;
+}

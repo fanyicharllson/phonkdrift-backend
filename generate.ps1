@@ -6,6 +6,6 @@ Write-Host "Compiling Protocol Buffers for Go..." -ForegroundColor Cyan
 protoc --proto_path=api/proto `
     --go_out=pb --go_opt=paths=source_relative `
     --go-grpc_out=pb --go-grpc_opt=paths=source_relative `
-    auth/auth.proto track/track.proto
+    auth/auth.proto track/track.proto chat/chat.proto
 
 Write-Host "Code generation complete! Check your /pb folder." -ForegroundColor Green

@@ -11,6 +11,7 @@ import (
 	discovery "github.com/fanyicharllson/phonkdrift-backend/internal/discovery-service"
 	trackdb "github.com/fanyicharllson/phonkdrift-backend/internal/track-service/repository/db"
 	authpb "github.com/fanyicharllson/phonkdrift-backend/pb/auth"
+	chatpb "github.com/fanyicharllson/phonkdrift-backend/pb/chat"
 	trackpb "github.com/fanyicharllson/phonkdrift-backend/pb/track"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
@@ -20,10 +21,13 @@ import (
 type GatewayServer struct {
 	authpb.UnimplementedAuthServiceServer
 	trackpb.UnimplementedTrackServiceServer
+	chatpb.UnimplementedChatServiceServer
 	Cfg         *config.Config
 	AuthClient  authpb.AuthServiceClient
 	TrackClient trackpb.TrackServiceClient
+	ChatClient  chatpb.ChatServiceClient
 	trackProxy  *TrackProxy
+	chatProxy   *ChatProxy
 }
 
 func Run(cfg *config.Config) error {
@@ -44,11 +48,24 @@ func Run(cfg *config.Config) error {
 		log.Fatalf("Failed to connect to internal Track Microservice proxy context: %v", err)
 	}
 
+	// Connect to internal Chat microservice
+	chatConn, err := grpc.NewClient(cfg.ChatServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Failed to connect to Chat Service: %v", err)
+	}
+
+	chatProxy, err := NewChatProxy(cfg.ChatServiceAddr)
+	if err != nil {
+		log.Fatalf("Failed to connect to internal Chat Microservice proxy context: %v", err)
+	}
+
 	server := &GatewayServer{
 		Cfg:         cfg,
 		AuthClient:  authpb.NewAuthServiceClient(authConn),
 		TrackClient: trackpb.NewTrackServiceClient(trackConn), // Instantiate track service connection client layer
+		ChatClient:  chatpb.NewChatServiceClient(chatConn),
 		trackProxy:  trackProxy,
+		chatProxy:   chatProxy,
 	}
 
 	// Connect to S3/DO Spaces for manual track seeding
@@ -101,11 +118,13 @@ func (s *GatewayServer) StartMobileGRPCListener() {
 
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(s.authUnaryInterceptor()),
+		grpc.StreamInterceptor(s.authStreamInterceptor()),
 	)
 
-	// Register both backend services on the multiplexed gateway port!
+	// Register all backend services on the multiplexed gateway port!
 	authpb.RegisterAuthServiceServer(grpcServer, s)
 	trackpb.RegisterTrackServiceServer(grpcServer, s)
+	chatpb.RegisterChatServiceServer(grpcServer, s)
 
 	log.Printf("gRPC Mobile Proxy listening safely on port %s 📱🚀", s.Cfg.ApiGatewayGrpcPort)
 	if err := grpcServer.Serve(lis); err != nil {

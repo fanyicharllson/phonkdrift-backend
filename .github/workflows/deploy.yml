@@ -28,8 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         # 🔥 Parallel multi-architecture compilation layer for your active services
-        service: [api-gateway, auth-service, track-service, discovery-service, notification-service]
-        # chat-service coming soon placeholder: [api-gateway, auth-service, track-service, notification-service, chat-service]
+        service: [api-gateway, auth-service, track-service, discovery-service, notification-service, chat-service]
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -93,7 +92,7 @@ jobs:
           kubectl rollout restart deployment/track-service-deployment
           kubectl rollout restart deployment/notification-service-deployment
           kubectl rollout restart deployment/discovery-service-deployment
-          # kubectl rollout restart deployment/chat-service-deployment
+          kubectl rollout restart deployment/chat-service-deployment
           
           # 4. Verify deployment rollouts completed successfully
           kubectl rollout status deployment/api-gateway-deployment --timeout=90s

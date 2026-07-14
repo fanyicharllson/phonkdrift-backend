@@ -71,6 +71,13 @@ func StartHTTPServer(
 		authedUsers.POST("/me/feedback", handleSubmitFeedback(authClient))
 	}
 
+	// 💬 Chat media upload (binary upload only — sending the message itself is a gRPC call)
+	chatMedia := r.Group("/api/v1/chat")
+	chatMedia.Use(middleware.AuthRequired(authClient))
+	{
+		chatMedia.POST("/media", handleUploadChatMedia(uploader))
+	}
+
 	// Register Admin Routes
 	RegisterAdminRoutes(r, cfg, authClient, trackClient, uploader, scheduler)
 
