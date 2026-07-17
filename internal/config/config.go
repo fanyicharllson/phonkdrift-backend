@@ -55,6 +55,11 @@ type Config struct {
 	// yt-dlp — path to a Netscape-format cookies file used to bypass YouTube bot-detection.
 	// If empty, yt-dlp runs without cookies (current behavior).
 	YtDlpCookiesPath string `mapstructure:"YT_DLP_COOKIES_PATH"`
+
+	// OTA APK update check — path to a version.json manifest read fresh on
+	// every request (no in-memory caching). If empty, defaults to
+	// "version.json" relative to the working directory.
+	VersionFilePath string `mapstructure:"VERSION_FILE_PATH"`
 }
 
 func LoadConfig() (config Config, err error) {
@@ -77,6 +82,7 @@ func LoadConfig() (config Config, err error) {
 		"DO_SPACES_ENDPOINT", "DO_SPACES_CDN_URL",
 		"YOUTUBE_API_KEY", "FCM_SERVICE_ACCOUNT_JSON", "ADMIN_JWT_SECRET",
 		"ADMIN_ALLOWED_IPS", "ALLOWED_ORIGINS", "YT_DLP_COOKIES_PATH",
+		"VERSION_FILE_PATH",
 	}
 	for _, key := range envKeys {
 		if err := viper.BindEnv(key); err != nil {

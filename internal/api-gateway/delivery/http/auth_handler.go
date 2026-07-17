@@ -43,6 +43,9 @@ func StartHTTPServer(
 	// including preflight OPTIONS requests for routes with no explicit OPTIONS handler
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
 
+	// 📱 Public OTA App-Update Check (unauthenticated — hit before login)
+	r.GET("/api/v1/app/check-update", handleCheckUpdate(cfg.VersionFilePath))
+
 	// 🔑 Public Auth Delivery Group
 	publicAuth := r.Group("/api/v1/auth")
 	{

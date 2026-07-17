@@ -80,6 +80,7 @@ jobs:
         run: |
           # 1. Apply Infrastructure State Map Layouts (Points directly to your iac/k8s directory context)
           kubectl apply -f iac/k8s/configmap.yaml
+          kubectl apply -f iac/k8s/version-configmap.yaml
           kubectl apply -f iac/k8s/redis.yaml
           kubectl apply -f iac/k8s/rabbitmq.yaml
           

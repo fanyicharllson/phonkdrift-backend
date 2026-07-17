@@ -265,6 +265,10 @@ spec:
         volumeMounts:
         - name: ytdlp-cookies
           mountPath: /app/cookies
+        - name: version-info
+          mountPath: /app/version.json
+          subPath: version.json
+          readOnly: true
       volumes:
       - name: ytdlp-cookies-secret
         secret:
@@ -272,6 +276,9 @@ spec:
           optional: true
       - name: ytdlp-cookies
         emptyDir: {}
+      - name: version-info
+        configMap:
+          name: phonkdrift-version-info
 ---
 apiVersion: v1
 kind: Service

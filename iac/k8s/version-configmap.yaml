@@ -1,0 +1,17 @@
+# Separate from phonkdrift-config (which is consumed via envFrom for plain
+# env vars) since this needs to be mounted as an actual file, not an env var.
+# Editing this ConfigMap (kubectl apply / kubectl edit) and re-applying is
+# enough to ship a new APK version/URL/mandatory flag — kubelet syncs the
+# mounted file into the running api-gateway pods within about a minute,
+# no image rebuild or pod restart required.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: phonkdrift-version-info
+data:
+  version.json: |
+    {
+      "latest_version": "1.0.0",
+      "apk_url": "https://phonkdrift-storage.fra1.cdn.digitaloceanspaces.com/releases/phonkdrift-1.0.0.apk",
+      "mandatory": false
+    }
